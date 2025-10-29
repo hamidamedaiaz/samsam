@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+<!-- ========================= -->
+<!-- Variables et paramètres -->
+<!-- ========================= -->
+<!-- Utilise le répertoire AppData\Local sur Windows -->
+<!-- C:\Users\user\AppData\Local\riverpath\logs -->
+<property name="LOG_DIR" value="${user.home}/Desktop"/>
+
+<!-- ========================= -->
+<!-- Console Appender -->
+<!-- ========================= -->
+<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+</appender>
+
+<!-- ========================= -->
+<!-- File Appender avec rotation -->
+<!-- ========================= -->
+<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!-- Fichier principal -->
+    <file>${LOG_DIR}/test.txt</file>
+
+    <!-- Politique de rotation -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+        <fileNamePattern>${LOG_DIR}/app-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+        <maxFileSize>10MB</maxFileSize>
+        <maxHistory>30</maxHistory>
+        <totalSizeCap>1GB</totalSizeCap>
+    </rollingPolicy>
+
+    <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+</appender>
+
+<root level="INFO">
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="FILE" />
+</root>
+</configuration>

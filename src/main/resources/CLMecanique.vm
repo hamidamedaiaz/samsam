@@ -1,0 +1,90 @@
+{ CLMecanique=
+    { Type= ModeleCLSurGeometres }
+    { Data=
+        { Entite= NOEUDS }
+$conditions
+        { ConditionLimite=
+            { Nom= Entree }
+            { Type= CLDirichlet }
+            { Appartient= BordNoeud }
+            { NbChamps= 3 }
+            { Degres= Un Un Zero }
+            { Valeurs= Zero Zero Zero }
+            { Priorite= 0 }
+        }
+    }
+    { Precision= PrecisionFrontieres }
+    { Dependance=
+        { Maillage= MaillagePrincipal }
+$appartient
+            { Champ= BordNoeud }
+            { Champ= PrecisionFrontieres }
+            { Champ= V }
+            { Champ= Un }
+            { Champ= Zero }
+    }
+}
+
+{ ExtraireOrdonnee=
+    { Type= ModeleParticulaire }
+    { Data=
+        { Champ=
+            { Type= P1_Scalaire_Par }
+            { Nom= Ordonnee }
+            { Data= ValeurItem 1 0 }
+        }
+        { ItemSolveur=
+            { Type= ISExtraire }
+            { NbChampSolution= 1 }
+            { ChampSolution= Ordonnee }
+            { NbChampParametre= 1 }
+            { ChampParametre= Coordonnees }
+            { Composante= 1 }
+        }
+    }
+    { Dependance=
+        { Maillage= MaillagePrincipal }
+        { Champ= Coordonnees }
+    }
+}
+
+{ CalculV=
+    { Type= ModeleArithmetique }
+        { Data=
+                { Champ=
+                        { Type= P0C_Scalaire_Par }
+                        { Nom= U }
+                        { Data= ValeurItem 1 0.3 }
+                }
+                { Champ=
+                        { Type= P0C_Scalaire_Par }
+                        { Nom= A }
+                        { Data= ValeurItem 1 23.7953599 }
+                }
+                { Champ=
+                        { Type= P0C_Scalaire_Par }
+                        { Nom= H }
+                        { Data= ValeurItem 1 0.41 }
+                }
+                { Champ=
+                        { Type= P1_Scalaire_Par }
+                        { Nom= V }
+                        { Data= ValeurItem 1 0 }
+                }
+        }
+        { Dependance=
+                { Maillage= MaillagePrincipal }
+                { Champ= U }
+                { Champ= A }
+                { Champ= H }
+                { Champ= Ordonnee }
+        }
+        { DependanceModifiable=
+                { Champ= V }
+        }
+        { Operation= V = H  }
+        { Operation= V -= Ordonnee }
+        { Operation= V *= A }
+        { Operation= V *= U }
+        { Operation= V *= Ordonnee }
+}

@@ -1,0 +1,30 @@
+{ GeometresE=
+    { Type= ModeleDeModeles }
+      { Dependance= 
+        { Maillage= MaillagePrincipal }
+   
+        { Modele= GeoBord }
+
+        $definition
+    }
+}
+
+{ GeoBord=
+    { Type= ModeleDeGeometres }
+    { Data=
+        { Geometre= 
+            { Type= GeometreChamp }
+            { Data=
+                { Champ= BordNoeud }
+                { ValeurSeuilMin= 0.999999 }
+                { ValeurSeuilMax= 1.000001 }
+            }
+        }
+    }
+    { Dependance=
+        { Maillage= MaillagePrincipal }
+    }
+}
+
+$values
+
