@@ -3,13 +3,10 @@ package com.softpath.riverpath.service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.softpath.riverpath.controller.BoundaryConditionController;
-import com.softpath.riverpath.controller.BoundaryConditionGlobalController;
-import com.softpath.riverpath.controller.BoundaryDefinitionController;
-import com.softpath.riverpath.controller.HalfPlaneBoundaryController;
-import com.softpath.riverpath.controller.LeftBottomPaneController;
-import com.softpath.riverpath.controller.MainController;
-import com.softpath.riverpath.controller.MeshingParametersController;
+import com.softpath.riverpath.controller.*;
+import com.softpath.riverpath.custom.event.CustomEvent;
+import com.softpath.riverpath.custom.event.EventEnum;
+import com.softpath.riverpath.custom.event.EventManager;
 import com.softpath.riverpath.model.Boundary;
 import com.softpath.riverpath.model.BoundaryCondition;
 import com.softpath.riverpath.model.Coordinates;
@@ -69,9 +66,8 @@ public class RunnerService {
 
 
     public void generateAllMTCFiles(String domainMesh) {
-        Simulation simulation = new Simulation();
+        Simulation simulation = SimulationStateService.getInstance().getCurrentSimulation();
         // set domain mesh file name
-        simulation.setDomainMeshFile(domainMesh);
         // generate GeometresE.mtc
         mergeBoundaryDefTemplate(simulation);
         // generate CLMecanique.mtc
@@ -85,6 +81,7 @@ public class RunnerService {
 
         try {
             mapper.writeValue(new File(workspaceDirectory, "simulation.json"), simulation);
+            EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_RUN_FIRED));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -216,7 +213,7 @@ public class RunnerService {
                 break;
 
             default:
-                throw new RuntimeException("Boundary type is not supported " + type);
+                throw new IllegalStateException("Boundary type is not supported " + type);
         }
         return boundary;
     }
@@ -529,7 +526,7 @@ public class RunnerService {
             return processBuilder.start();
         } catch (Exception e) {
             mainController.displayMessageConsoleOutput(e.getMessage());
-            throw new RuntimeException(e);
+            return null;
         }
     }
 }

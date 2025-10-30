@@ -104,6 +104,7 @@ public class ProjectSetupController implements Initializable {
             // display the mesh
             displayDomain(new File(workspaceDirectory, domainExtentionT));
         }
+        EventManager.fireCustomEvent(new CustomEvent(NEW_PROJECT, domainExtentionT));
     }
 
     /**
@@ -182,6 +183,7 @@ public class ProjectSetupController implements Initializable {
         } catch (RuntimeException ex) {
             log.error(ex.getMessage(), ex);
             mainController.displayMessageConsoleOutput("Error while setting up the project: " + ex.getMessage());
+            return;
         }
         // disable run button and show stop button
         runButton.setDisable(true);
@@ -249,7 +251,6 @@ public class ProjectSetupController implements Initializable {
                 }
             } catch (IOException ex) {
                 Platform.runLater(() -> consolePaneController.displayMessage("Error reading process output: " + ex.getMessage()));
-                throw new RuntimeException(ex);
             }
         });
         try {
@@ -257,7 +258,6 @@ public class ProjectSetupController implements Initializable {
             future.get();
         } catch (Exception ex) {
             mainController.displayMessageConsoleOutput(ex.getMessage());
-            throw new RuntimeException(ex);
         } finally {
             // flush remaining logs
             mainController.getRightPaneController().getConsolePaneController().flush();

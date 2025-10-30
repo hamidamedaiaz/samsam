@@ -27,6 +27,6 @@ public enum ShapeType {
                 return ShapeType;
             }
         }
-        throw new RuntimeException("No enum constant with name " + murTypeStr);
+        throw new IllegalArgumentException("No enum constant with name " + murTypeStr);
     }
 }

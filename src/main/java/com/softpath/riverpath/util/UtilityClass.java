@@ -122,8 +122,8 @@ public class UtilityClass {
                         }
                     }
                 }
-            } catch (Exception e) {
-                throw new RuntimeException("Error accessing JAR file", e);
+            } catch (URISyntaxException e) {
+                throw new IOException("Error accessing JAR file", e);
             }
         }
     }
@@ -145,7 +145,7 @@ public class UtilityClass {
             URL pythonUrl = UtilityClass.class.getResource("/python/python.exe");
 
             if (pythonUrl != null) {
-                return "C:\\Users\\user\\Desktop\\borderLineLastModifs\\riverpath\\src\\resources\\python\\python.exe";
+                return "C:\\Users\\user\\Desktop\\Jean_Sophtapth\\riverpath\\src\\main\\resources\\python\\python.exe";
             }
 
             // If we get here, embedded Python has not been found.
@@ -163,7 +163,7 @@ public class UtilityClass {
      * @return the path to the extracted Python executable
      * @throws IOException if extraction fails
      */
-    private static String extractEmbeddedPythonOptimized() {
+    private static String extractEmbeddedPythonOptimized() throws IOException {
         if (embeddedPythonPath != null && pythonExtracted) {
             return embeddedPythonPath;
         }
@@ -225,14 +225,14 @@ public class UtilityClass {
             }
 
             if (embeddedPythonPath == null) {
-                throw new RuntimeException("python.exe not found in python resources/");
+                throw new IOException("python.exe not found in python resources/");
             }
 
             pythonExtracted = true;
             return embeddedPythonPath;
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error accessing JAR", e);
+        } catch (URISyntaxException e) {
+            throw new IOException("Error accessing JAR", e);
         }
     }
 

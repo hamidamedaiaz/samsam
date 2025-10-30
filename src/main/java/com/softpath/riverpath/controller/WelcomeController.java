@@ -55,18 +55,14 @@ public class WelcomeController implements Initializable {
      */
     @FXML
     private void handleNewProject(ActionEvent event) throws IOException {
-        try{
-            if (event != null) {
-                Node source = (Node) event.getSource();
-                Stage welcomeStage = (Stage) source.getScene().getWindow();
-                welcomeStage.hide();
-                welcomeStage.close();
-            }
-            // load main page
-            loadMainPage();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        if (event != null) {
+            Node source = (Node) event.getSource();
+            Stage welcomeStage = (Stage) source.getScene().getWindow();
+            welcomeStage.hide();
+            welcomeStage.close();
         }
+        // load main page
+        loadMainPage();
     }
 
     /**
@@ -91,7 +87,7 @@ public class WelcomeController implements Initializable {
                 ImportProjectController importProjectController = new ImportProjectController(mainController);
                 importProjectController.handleImportProject();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
                 // TODO Gérer l'exception de manière appropriée
             }
         });
