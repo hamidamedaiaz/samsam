@@ -145,7 +145,7 @@ public class UtilityClass {
             URL pythonUrl = UtilityClass.class.getResource("/python/python.exe");
 
             if (pythonUrl != null) {
-                return "C:\\Users\\user\\Desktop\\Hamid_workSpace\\riverpath\\src\\main\\resources\\python\\python.exe";
+                return extractEmbeddedPythonOptimized();
             }
 
             // If we get here, embedded Python has not been found.

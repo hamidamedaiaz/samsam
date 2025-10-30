@@ -104,7 +104,6 @@ public class ProjectSetupController implements Initializable {
             // display the mesh
             displayDomain(new File(workspaceDirectory, domainExtentionT));
         }
-        EventManager.fireCustomEvent(new CustomEvent(NEW_PROJECT, domainExtentionT));
     }
 
     /**
