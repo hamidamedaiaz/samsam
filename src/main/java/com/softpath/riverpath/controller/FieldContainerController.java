@@ -8,7 +8,6 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.TextField;
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
@@ -22,9 +21,8 @@ import static com.softpath.riverpath.util.UtilityClass.flagTextFieldWarning;
  */
 public abstract class FieldContainerController {
 
-    @Getter
     private final List<TextFieldHandler> textFieldHandlers = new ArrayList<>();
-    @Getter
+
     private final List<HyperLinkFieldHandler> hyperLinkFieldHandlers = new ArrayList<>();
 
     @FXML
@@ -59,21 +57,6 @@ public abstract class FieldContainerController {
         hyperLinkFieldHandlers.forEach(HyperLinkFieldHandler::commit);
     }
 
-    public boolean hasDirtyFields() {
-        if (this.getTextFieldHandlers() != null) {
-            for (TextFieldHandler tfh : this.getTextFieldHandlers()) {
-                if (tfh.isDirty()) return true;
-            }
-        }
-
-        if (this.getHyperLinkFieldHandlers() != null) {
-            for (HyperLinkFieldHandler hlf : this.getHyperLinkFieldHandlers()) {
-                if (hlf.isDirty()) return true;
-            }
-        }
-
-        return false;
-    }
     /**
      * Rollback all text fields
      */
@@ -124,17 +107,17 @@ public abstract class FieldContainerController {
      * @return the initial value
      */
     protected String getInitialValue(Node field) {
-        return hyperLinkFieldHandlers.stream()
-                .filter(h -> h.getHyperLink().equals(field))
-                .map(HyperLinkFieldHandler::getLastValidatedValue)
-                .findFirst()
-                .orElseGet(() -> textFieldHandlers.stream()
-                        .filter(t -> t.getField().equals(field))
-                        .map(TextFieldHandler::getLastValidatedValue)
-                        .findFirst()
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("Field not found in bindings: " + field))
-                );
+            return hyperLinkFieldHandlers.stream()
+                    .filter(h -> h.getHyperLink().equals(field))
+                    .map(HyperLinkFieldHandler::getLastValidatedValue)
+                    .findFirst()
+                    .orElseGet(() -> textFieldHandlers.stream()
+                            .filter(t -> t.getField().equals(field))
+                            .map(TextFieldHandler::getLastValidatedValue)
+                            .findFirst()
+                            .orElseThrow(() ->
+                                    new IllegalArgumentException("Field not found in bindings: " + field))
+                    );
     }
 
 

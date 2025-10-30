@@ -1,9 +1,6 @@
 package com.softpath.riverpath.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softpath.riverpath.custom.event.CustomEvent;
-import com.softpath.riverpath.custom.event.EventEnum;
-import com.softpath.riverpath.custom.event.EventManager;
 import com.softpath.riverpath.model.Boundary;
 import com.softpath.riverpath.model.Simulation;
 import com.softpath.riverpath.util.UtilityClass;
@@ -47,7 +44,6 @@ public class ImportProjectController {
         // If a directory is selected, import the project
         if (selectedDirectory != null) {
             try {
-                EventManager.fireCustomEvent(new CustomEvent(EventEnum.IMPORT_PROJECT, selectedDirectory));
                 importProject(selectedDirectory);
             } catch (Exception e) {
                 Platform.runLater(() -> {
@@ -60,7 +56,6 @@ public class ImportProjectController {
     private void importProject(File projectDirectory) throws IOException {
         // Encapsulate project description in #Simulation.java object
         File simulationJsonFile = new File(projectDirectory, "simulation.json");
-
         if (!simulationJsonFile.exists()) {
             Platform.runLater(() -> mainController.displayMessageConsoleOutput("simulation.json file not found in "
                     + "the selected directory."));
@@ -102,7 +97,7 @@ public class ImportProjectController {
         log.error("An error occurred while importing the project.", e);
     }
 
-    private void  populateBoundaryData(ProjectSetupController projectSetupController, Simulation simulation) {
+    private void populateBoundaryData(ProjectSetupController projectSetupController, Simulation simulation) {
 
         LeftBottomPaneController leftBottomPaneController = projectSetupController.getLeftBottomPaneController();
         // for each boundary in json file create a boundary pane
@@ -127,9 +122,10 @@ public class ImportProjectController {
     }
 
     private File searchAndGetFile(File directory, String fileName) throws FileNotFoundException {
+
         return Arrays.stream(Objects.requireNonNull(directory.listFiles()))
                 .filter(e -> fileName.equals(e.getName()))
                 .findFirst()
-                .orElseThrow(() -> new FileNotFoundException("Directory is empty"));
+                .orElseThrow(() -> new FileNotFoundException("Directory is empty" + directory.getAbsolutePath()));
     }
 }

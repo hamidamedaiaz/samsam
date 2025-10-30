@@ -3,10 +3,13 @@ package com.softpath.riverpath.service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.softpath.riverpath.controller.*;
-import com.softpath.riverpath.custom.event.CustomEvent;
-import com.softpath.riverpath.custom.event.EventEnum;
-import com.softpath.riverpath.custom.event.EventManager;
+import com.softpath.riverpath.controller.BoundaryConditionController;
+import com.softpath.riverpath.controller.BoundaryConditionGlobalController;
+import com.softpath.riverpath.controller.BoundaryDefinitionController;
+import com.softpath.riverpath.controller.HalfPlaneBoundaryController;
+import com.softpath.riverpath.controller.LeftBottomPaneController;
+import com.softpath.riverpath.controller.MainController;
+import com.softpath.riverpath.controller.MeshingParametersController;
 import com.softpath.riverpath.model.Boundary;
 import com.softpath.riverpath.model.BoundaryCondition;
 import com.softpath.riverpath.model.Coordinates;
@@ -17,6 +20,7 @@ import com.softpath.riverpath.model.RadialBoundary;
 import com.softpath.riverpath.model.ShapeType;
 import com.softpath.riverpath.model.Simulation;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -38,6 +42,7 @@ import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.SPACE;
 
+@Slf4j
 @Getter
 public class RunnerService {
 
@@ -64,10 +69,55 @@ public class RunnerService {
         velocityEngine.init();
     }
 
+    /**
+     * Initialize the boundary type (half plane, circle, cube, immersed) based on the type
+     *
+     * @param controller the boundary definition controller
+     * @return the boundary object
+     */
+    private static Boundary initiateBoundaryType(BoundaryDefinitionController controller) {
+        Boundary boundary;
+        ShapeType type = controller.getComboBoxInitialValue();
+        // initialize the boundary based on the type
+        switch (type) {
+            case Half_Plane:
+                // Set normal vector
+                Coordinates normal = new Coordinates();
+                normal.setX(controller.getHalfPlaneBoundaryController().getNormalX().getText());
+                normal.setY(controller.getHalfPlaneBoundaryController().getNormalY().getText());
+                HalfPlaneBoundary halfPlaneBoundary = new HalfPlaneBoundary();
+                halfPlaneBoundary.setNormal(normal);
+                boundary = halfPlaneBoundary;
+                break;
+            case Circle:
+            case Sphere:
+                RadialBoundary radialBoundary = new RadialBoundary();
+                radialBoundary.setRadius(controller.getCircleBoundaryController().getRadius().getText());
+                boundary = radialBoundary;
+                break;
+            case Cube:
+                CubeBoundary cubeBoundary = new CubeBoundary();
+                cubeBoundary.setWidth(controller.getRectangleBoundaryController().getRectangleWidth().getText());
+                cubeBoundary.setHeight(controller.getRectangleBoundaryController().getRectangleHeight().getText());
+                cubeBoundary.setDepth("0"); // For a 2D cube
+                boundary = cubeBoundary;
+                break;
+            case Immersed:
+                ImmersedBoundary immersedBoundary = new ImmersedBoundary();
+                immersedBoundary.setImmersedObjectFileName(controller.getImmersedBoundaryController().getMeshFileName());
+                boundary = immersedBoundary;
+                break;
+
+            default:
+                throw new IllegalStateException("Boundary type is not supported " + type);
+        }
+        return boundary;
+    }
 
     public void generateAllMTCFiles(String domainMesh) {
-        Simulation simulation = SimulationStateService.getInstance().getCurrentSimulation();
+        Simulation simulation = new Simulation();
         // set domain mesh file name
+        simulation.setDomainMeshFile(domainMesh);
         // generate GeometresE.mtc
         mergeBoundaryDefTemplate(simulation);
         // generate CLMecanique.mtc
@@ -81,7 +131,6 @@ public class RunnerService {
 
         try {
             mapper.writeValue(new File(workspaceDirectory, "simulation.json"), simulation);
-            EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_RUN_FIRED));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -148,7 +197,6 @@ public class RunnerService {
         mergeContextToTemplate("IO", "output.mtc", "output.vm", context);
     }
 
-
     private void addBoundaryToSimulation(BoundaryDefinitionController controller, Simulation simulation) {
         // Check whether a boundary with this name already exists
         String boundaryName = controller.getNameInitialValue();
@@ -171,51 +219,6 @@ public class RunnerService {
 
         // Add to simulation
         simulation.getBoundaries().add(boundary);
-    }
-
-    /**
-     * Initialize the boundary type (half plane, circle, cube, immersed) based on the type
-     *
-     * @param controller the boundary definition controller
-     * @return the boundary object
-     */
-    private static Boundary initiateBoundaryType(BoundaryDefinitionController controller) {
-        Boundary boundary;
-        ShapeType type = controller.getComboBoxInitialValue();
-        // initialize the boundary based on the type
-        switch (type) {
-            case Half_Plane:
-                // Set normal vector
-                Coordinates normal = new Coordinates();
-                normal.setX(controller.getHalfPlaneBoundaryController().getNormalX().getText());
-                normal.setY(controller.getHalfPlaneBoundaryController().getNormalY().getText());
-                HalfPlaneBoundary halfPlaneBoundary = new HalfPlaneBoundary();
-                halfPlaneBoundary.setNormal(normal);
-                boundary = halfPlaneBoundary;
-                break;
-            case Circle:
-            case Sphere:
-                RadialBoundary radialBoundary = new RadialBoundary();
-                radialBoundary.setRadius(controller.getCircleBoundaryController().getRadius().getText());
-                boundary = radialBoundary;
-                break;
-            case Cube:
-                CubeBoundary cubeBoundary = new CubeBoundary();
-                cubeBoundary.setWidth(controller.getRectangleBoundaryController().getRectangleWidth().getText());
-                cubeBoundary.setHeight(controller.getRectangleBoundaryController().getRectangleHeight().getText());
-                cubeBoundary.setDepth("0"); // For a 2D cube
-                boundary = cubeBoundary;
-                break;
-            case Immersed:
-                ImmersedBoundary immersedBoundary = new ImmersedBoundary();
-                immersedBoundary.setImmersedObjectFileName(controller.getImmersedBoundaryController().getMeshFileName());
-                boundary = immersedBoundary;
-                break;
-
-            default:
-                throw new IllegalStateException("Boundary type is not supported " + type);
-        }
-        return boundary;
     }
 
     private void mergeBoundaryConditionTemplate(Simulation simulation) {
@@ -525,6 +528,7 @@ public class RunnerService {
             }
             return processBuilder.start();
         } catch (Exception e) {
+            log.error("Error starting process:", e);
             mainController.displayMessageConsoleOutput(e.getMessage());
             return null;
         }

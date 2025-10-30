@@ -82,12 +82,16 @@ public class RightPaneController implements Initializable {
         // initiate fields
         rootPane = new Pane();
         contentPane = new StackPane();
-        contentPane.setAlignment(Pos.CENTER);
         contentPane.prefWidthProperty().bind(rootPane.widthProperty());
         contentPane.prefHeightProperty().bind(rootPane.heightProperty());
         rootPane.getChildren().add(contentPane);
-        meshPaneController.applyPaneView(rootPane);
-        simpleView.setVisible(true);
+
+        //  Display the mesh in the 3D view
+        Group mainGroup = new Group();
+        mainGroup.getChildren().add(domainMeshView);
+        rootPane.getChildren().add(mainGroup);
+
+        meshPaneController.applyPaneView(rootPane);simpleView.setVisible(true);
         meshView.setVisible(true);
     }
 
@@ -129,6 +133,11 @@ public class RightPaneController implements Initializable {
      * Display domain and all objects
      */
     public void displayMesh() {
+        // Simple check - if not initialized, do nothing
+        if (domainMeshView == null || rootPane == null) {
+            return;
+        }
+
         // clear all
         rootPane.getChildren().clear();
         domainMeshView.setDrawMode(DrawMode.LINE);

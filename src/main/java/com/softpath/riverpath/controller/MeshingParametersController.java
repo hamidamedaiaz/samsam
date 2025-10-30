@@ -13,12 +13,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 
 @NoArgsConstructor
 @Getter
-@Slf4j
 public class MeshingParametersController extends ValidAndCancelController {
 
     @FXML
@@ -66,7 +64,7 @@ public class MeshingParametersController extends ValidAndCancelController {
 
     @Override
     protected boolean customValidate() {
-        EventManager.fireCustomEvent(new CustomEvent(EventEnum.MESHING_PARAMETERS_VALID, this));
+        EventManager.fireCustomEvent(new CustomEvent(EventEnum.MESHING_PARAMETERS_VALID));
         return true;
     }
 
@@ -77,33 +75,18 @@ public class MeshingParametersController extends ValidAndCancelController {
 
     public void importData(Simulation simulation) {
         // importer les données du fichier simulation
-        try{
-            if (!simulation.getNbElements().isEmpty()
-                    || !simulation.getHMin().isEmpty()
-                    || !simulation.getLMax().isEmpty()
-                    || !simulation.getNScaling().isEmpty()
-                    || !simulation.getScaleNorme().isEmpty()
-                    || !simulation.getAdaptateur().isEmpty()
-                    || !simulation.getLMin().isEmpty()
-                    || !simulation.getErr1().isEmpty()
-                    || !simulation.getErr2().isEmpty()
-            ) {
-                nbElements.setText(simulation.getNbElements());
-                hMin.setText(simulation.getHMin());
-                lMax.setText(simulation.getLMax());
-                nScaling.setText(simulation.getNScaling());
-                scaleNorme.setText(simulation.getScaleNorme());
-                err1.setText(simulation.getErr1());
-                err2.setText(simulation.getErr2());
-                adaptateur.setText(simulation.getAdaptateur());
-                lMin.setText(simulation.getLMin());
+        nbElements.setText(simulation.getNbElements());
+        hMin.setText(simulation.getHMin());
+        lMax.setText(simulation.getLMax());
+        nScaling.setText(simulation.getNScaling());
+        scaleNorme.setText(simulation.getScaleNorme());
+        err1.setText(simulation.getErr1());
+        err2.setText(simulation.getErr2());
+        adaptateur.setText(simulation.getAdaptateur());
+        lMin.setText(simulation.getLMin());
 
-                // validate imported data
-                handleValidate(null);
-            }
-        } catch (NullPointerException e){
-            log.warn("No data to import for module");
-        }
+        // validate imported data
+        handleValidate(null);
     }
 
 }

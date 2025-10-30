@@ -1,10 +1,5 @@
 package com.softpath.riverpath.controller;
 
-import com.softpath.riverpath.custom.event.CustomEvent;
-import com.softpath.riverpath.custom.event.EventEnum;
-import com.softpath.riverpath.custom.event.EventManager;
-import com.softpath.riverpath.service.SimulationStateService;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -61,30 +56,6 @@ public class MenuBarController {
     private void handleClose() {
         // Check and stop the simulation if it is running
         if (mainController != null) {
-            String actionOnexit = mainController.showActionsOnExitWithStableState();
-            switch (actionOnexit) {
-                case "SAVE" -> {
-                    mainController.getProjectSetupController().getLeftBottomPaneController().handleSaveOnExit();
-                    if (mainController.getProjectSetupController().getLeftBottomPaneController().hasUIResourcesToValidate()) {// means the validation was not successful
-                        String actionOnValidationError = mainController.promptErrorOnValidation();
-                        switch (actionOnValidationError) {
-                            case "CLOSE_ANYWAY" -> {/*do nothing to pass to next phase*/}
-                            case "RETURN_TO_UI" -> {
-                                return; // close action is canceled
-                            }
-                            default -> {
-                                return; //safeguard rollback
-                            }
-                        }
-                    }
-                    handleSaveProjectChanges();
-                }
-                case "CLOSE_ANYWAY" -> { // here we immediately close, so we just pass to next phase
-                }
-                default -> { //rollback on exit clicked
-                    return;
-                }
-            }
             ProjectSetupController projectSetupController = mainController.getProjectSetupController();
             if (projectSetupController != null && projectSetupController.getCurrentProcess() != null
                     && projectSetupController.getCurrentProcess().isAlive()) {
@@ -125,11 +96,6 @@ public class MenuBarController {
         if (event.getScreenY() <= MAXIMIZE_TRIGGER_AREA && !isMaximized) {
             toggleMaximize();
         }
-    }
-
-    @FXML
-    private void handleSaveProjectChanges() {
-        EventManager.fireCustomEvent(new CustomEvent(EventEnum.SAVED_STATE));
     }
 
     private void toggleMaximize() {
@@ -199,7 +165,7 @@ public class MenuBarController {
             newStage.setMaximized(true);
             newStage.show();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -225,7 +191,7 @@ public class MenuBarController {
             ImportProjectController importProjectController = new ImportProjectController(mainController);
             importProjectController.handleImportProject();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

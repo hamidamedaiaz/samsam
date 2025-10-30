@@ -55,6 +55,7 @@ public class WelcomeController implements Initializable {
      */
     @FXML
     private void handleNewProject(ActionEvent event) throws IOException {
+
         if (event != null) {
             Node source = (Node) event.getSource();
             Stage welcomeStage = (Stage) source.getScene().getWindow();
@@ -87,8 +88,7 @@ public class WelcomeController implements Initializable {
                 ImportProjectController importProjectController = new ImportProjectController(mainController);
                 importProjectController.handleImportProject();
             } catch (IOException e) {
-                e.printStackTrace();
-                // TODO Gérer l'exception de manière appropriée
+                throw new RuntimeException(e);
             }
         });
     }
