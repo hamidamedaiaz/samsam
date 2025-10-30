@@ -12,7 +12,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,11 +44,12 @@ import static com.softpath.riverpath.custom.event.EventEnum.CONVERT_PYTHON_PROCE
  */
 public class UtilityClass {
 
+    public static File workspaceDirectory;
     private static final String ZERO = "0";
     private static final String DOT = ".";
     private static final String EMPTY = "";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    public static File workspaceDirectory;
+
     // Cache for the embedded Python path
     private static String embeddedPythonPath = null;
     private static boolean pythonExtracted = false;
@@ -93,32 +93,38 @@ public class UtilityClass {
         UtilityClass.workspaceDirectory = workspaceDirectory;
     }
 
-    private static void copyResourcesFromJar(File targetDir)  {
-        // Reading JAR entries
-        try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain()
-                .getCodeSource().getLocation().toURI()))) {
+    private static void copyResourcesFromJar(File targetDir) throws IOException {
+        try (InputStream in = UtilityClass.class.getClassLoader().getResourceAsStream("workspace_template")) {
+            if (in == null) {
+                throw new IOException("workspace_template directory not found in JAR");
+            }
 
-            Enumeration<JarEntry> entries = jarFile.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                if (entry.getName().startsWith("workspace_template/") && !entry.isDirectory()) {
-                    // Create parent folders if necessary
-                    File targetFile = new File(targetDir, entry.getName().substring("workspace_template/".length()));
-                    targetFile.getParentFile().mkdirs();
+            // Reading JAR entries
+            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()))) {
 
-                    // Copy the file
-                    try (InputStream jarIn = jarFile.getInputStream(entry);
-                         FileOutputStream out = new FileOutputStream(targetFile)) {
-                        byte[] buffer = new byte[8192];
-                        int bytesRead;
-                        while ((bytesRead = jarIn.read(buffer)) != -1) {
-                            out.write(buffer, 0, bytesRead);
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith("workspace_template/") && !entry.isDirectory()) {
+                        // Create parent folders if necessary
+                        File targetFile = new File(targetDir, entry.getName().substring("workspace_template/".length()));
+                        targetFile.getParentFile().mkdirs();
+
+                        // Copy the file
+                        try (InputStream jarIn = jarFile.getInputStream(entry);
+                             FileOutputStream out = new FileOutputStream(targetFile)) {
+                            byte[] buffer = new byte[8192];
+                            int bytesRead;
+                            while ((bytesRead = jarIn.read(buffer)) != -1) {
+                                out.write(buffer, 0, bytesRead);
+                            }
                         }
                     }
                 }
+            } catch (URISyntaxException e) {
+                throw new IOException("Error accessing JAR file", e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Error accessing JAR", e);
         }
     }
 
@@ -139,7 +145,7 @@ public class UtilityClass {
             URL pythonUrl = UtilityClass.class.getResource("/python/python.exe");
 
             if (pythonUrl != null) {
-                return "C:\\Users\\user\\Desktop\\Jean_Sophtapth\\riverpath\\src\\main\\resources\\python\\python.exe";
+                return "C:\\Users\\user\\Desktop\\Hamid_workSpace\\riverpath\\src\\main\\resources\\python\\python.exe";
             }
 
             // If we get here, embedded Python has not been found.
@@ -157,7 +163,7 @@ public class UtilityClass {
      * @return the path to the extracted Python executable
      * @throws IOException if extraction fails
      */
-    private static String extractEmbeddedPythonOptimized() {
+    private static String extractEmbeddedPythonOptimized() throws IOException {
         if (embeddedPythonPath != null && pythonExtracted) {
             return embeddedPythonPath;
         }
@@ -219,14 +225,14 @@ public class UtilityClass {
             }
 
             if (embeddedPythonPath == null) {
-                throw new RuntimeException("python.exe not found in python resources/");
+                throw new IOException("python.exe not found in python resources/");
             }
 
             pythonExtracted = true;
             return embeddedPythonPath;
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error accessing JAR", e);
+        } catch (URISyntaxException e) {
+            throw new IOException("Error accessing JAR", e);
         }
     }
 

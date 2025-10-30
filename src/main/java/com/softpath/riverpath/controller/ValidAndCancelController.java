@@ -3,6 +3,8 @@ package com.softpath.riverpath.controller;
 import com.softpath.riverpath.custom.event.CustomEvent;
 import com.softpath.riverpath.custom.event.EventEnum;
 import com.softpath.riverpath.custom.event.EventManager;
+import com.softpath.riverpath.model.HyperLinkFieldHandler;
+import com.softpath.riverpath.model.TextFieldHandler;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
