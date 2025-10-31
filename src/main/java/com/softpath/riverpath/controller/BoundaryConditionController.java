@@ -32,7 +32,7 @@ import java.util.ResourceBundle;
 public class BoundaryConditionController extends ValidAndCancelController implements Initializable {
 
     @FXML
-    @ValidatedField
+    @ValidatedField(nullable = true) // to make not nullable
     private TextField priorityValue;
     @FXML
     private Label titledName;
@@ -117,7 +117,7 @@ public class BoundaryConditionController extends ValidAndCancelController implem
     @Override
     protected boolean customValidate() {
         // check if condition name is not blank -- can never be blank because it's not possible in definition
-        EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_CONDITION_VALIDATED, conditionNameValue.getText()));
+        EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_CONDITION_VALIDATED, titledName.getText(), this));
         return true;
     }
 

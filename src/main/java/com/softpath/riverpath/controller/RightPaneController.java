@@ -7,6 +7,7 @@ import com.softpath.riverpath.util.ColorObjectHandler;
 import com.softpath.riverpath.util.DomainProperties;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.SplitPane;
@@ -25,6 +26,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,7 +39,6 @@ import java.util.ResourceBundle;
 @Setter
 public class RightPaneController implements Initializable {
 
-    private final ColorObjectHandler colorObjectHandler = new ColorObjectHandler();
     @FXML
     private VBox displayBox;
     @FXML
@@ -81,15 +82,10 @@ public class RightPaneController implements Initializable {
         // initiate fields
         rootPane = new Pane();
         contentPane = new StackPane();
+        contentPane.setAlignment(Pos.CENTER);
         contentPane.prefWidthProperty().bind(rootPane.widthProperty());
         contentPane.prefHeightProperty().bind(rootPane.heightProperty());
         rootPane.getChildren().add(contentPane);
-
-        //  Display the mesh in the 3D view
-        Group mainGroup = new Group();
-        mainGroup.getChildren().add(domainMeshView);
-        rootPane.getChildren().add(mainGroup);
-
         meshPaneController.applyPaneView(rootPane);
         simpleView.setVisible(true);
         meshView.setVisible(true);
@@ -99,27 +95,32 @@ public class RightPaneController implements Initializable {
      * Display only the borderlines with specified color
      */
     public void displayBorderlines() {
-        // Simple check - if not initialized, do nothing
+        // ✅ Simple check - if not initialized, do nothing
         if (domainMeshView == null || rootPane == null) {
             return;
         }
-        // Utiliser la même structure que displayMesh()
-        rootPane.getChildren().clear();
-        // Create the domain border visualization (domain outline in black)
+
         CFDTriangleMesh domainAsMesh = (CFDTriangleMesh) domainMeshView.getMesh();
         double scaleFactor = DomainProperties.getInstance().getScaleFactor();
         List<Node> domainLines = domainAsMesh.createColoredBorderLines(scaleFactor, Color.BLACK);
-        // Create a group to hold all visual elements
+        ColorObjectHandler colorObjectHandler = new ColorObjectHandler();
+        List<Node> objectLines = new ArrayList<>();
+        for (CFDTriangleMesh objectMesh : allMeshes.values()) {
+            Color objectColor = colorObjectHandler.getNextColor();
+            // For 2D objects, create normal colored lines
+            if (!objectMesh.is3D()) {
+                objectLines.addAll(objectMesh.createColoredLines(scaleFactor, objectColor));
+            } else {
+                objectLines.addAll(objectMesh.createColoredBorderLines(scaleFactor, objectColor));
+            }
+        }
         Group linesGroup = new Group();
         linesGroup.getChildren().addAll(domainLines);
-        // Iterate over all immersed meshes
-        for (CFDTriangleMesh objectMesh : allMeshes.values()) {
-            Color objectColor = objectMesh.getColor();
-            List<Node> borderLines = objectMesh.createColoredBorderLines(scaleFactor, objectColor);
-            //Add each object's borders immediately
-            linesGroup.getChildren().addAll(borderLines);
-        }
-        addAllShapes(linesGroup);
+        linesGroup.getChildren().addAll(objectLines);
+
+        rootPane.getChildren().clear();
+        addAllShapes(colorObjectHandler, true, linesGroup);
+        // Add normal arrows
         linesGroup.getChildren().addAll(normalArrows.values());
         rootPane.getChildren().add(linesGroup);
     }
@@ -128,20 +129,17 @@ public class RightPaneController implements Initializable {
      * Display domain and all objects
      */
     public void displayMesh() {
-        // Simple check - if not initialized, do nothing
-        if (domainMeshView == null || rootPane == null) {
-            return;
-        }
-
         // clear all
         rootPane.getChildren().clear();
         domainMeshView.setDrawMode(DrawMode.LINE);
         rootPane.getChildren().add(domainMeshView);
         Group meshGroup = new Group();
+
+        ColorObjectHandler colorObjectHandler = new ColorObjectHandler();
         // add immersed objects to the meshGroup
-        addImmersedObjects(meshGroup);
+        addImmersedObjects(meshGroup, colorObjectHandler);
         // add shapes to the meshGroup
-        meshGroup.getChildren().addAll(shapes.values());
+        addAllShapes(colorObjectHandler, false, meshGroup);
         // add normal arrows for half planes
         meshGroup.getChildren().addAll(normalArrows.values());
         rootPane.getChildren().add(meshGroup);
@@ -157,7 +155,6 @@ public class RightPaneController implements Initializable {
      */
     private void addObject(String controllerID, CFDTriangleMesh objectMesh) {
         objectMesh.setScale(DomainProperties.getInstance().getScaleFactor());
-        objectMesh.setColor(colorObjectHandler.getNextColor());
         allMeshes.put(controllerID, objectMesh);
     }
 
@@ -192,9 +189,8 @@ public class RightPaneController implements Initializable {
      * @param boundaryDefinitionController the boundary definition controller
      */
     public void removeAndDisplay(BoundaryDefinitionController boundaryDefinitionController) {
-        String id = boundaryDefinitionController.toString();
         if (boundaryDefinitionController.isImmersedObject()) {
-            allMeshes.remove(id);
+            allMeshes.remove(boundaryDefinitionController.toString());
         } else {
             shapes.remove(boundaryDefinitionController.toString());
             // Remove the normal arrow if it exists
@@ -211,27 +207,36 @@ public class RightPaneController implements Initializable {
      */
     private void addShape(BoundaryDefinitionController boundaryDefinitionController) {
         if (boundaryDefinitionController.isStandardShape()) {
-            Coordinates origin = new Coordinates(boundaryDefinitionController.getOriginX().getText(), boundaryDefinitionController.getOriginY().getText(), boundaryDefinitionController.getOriginZ().getText());
+            Coordinates origin = new Coordinates(boundaryDefinitionController.getOriginX().getText(),
+                    boundaryDefinitionController.getOriginY().getText(),
+                    boundaryDefinitionController.getOriginZ().getText());
             Shape shape = boundaryDefinitionController.getBaseBoundaryController().getShape(DomainProperties.getInstance(), origin);
             shapes.put(boundaryDefinitionController.toString(), shape);
             // add normal to right pane
-            normalArrows.put(boundaryDefinitionController.toString(), boundaryDefinitionController.getHalfPlaneBoundaryController().getPlanNormal(origin));
+            normalArrows.put(boundaryDefinitionController.toString(),
+                    boundaryDefinitionController.getHalfPlaneBoundaryController().getPlanNormal(origin));
         }
     }
 
     /**
      * Add shapes to the group
      *
-     * @param group the group to add the shapes to
+     * @param colorObjectHandler  the color object handler to choose the color of each object
+     * @param isSimpleDisplayMode true if the display mode is simple
+     * @param group               the group to add the shapes to
      */
-    private void addAllShapes(Group group) {
+    private void addAllShapes(ColorObjectHandler colorObjectHandler, boolean isSimpleDisplayMode, Group group) {
         if (!shapes.isEmpty()) {
             Collection<Shape> shapesCollection = shapes.values();
-            shapesCollection.forEach((shape) -> {
-                shape.setFill(Color.TRANSPARENT);
-                shape.setStroke(Color.RED);
-                shape.setStrokeWidth(1);
-            });
+            if (isSimpleDisplayMode) {
+                shapesCollection.forEach((shape) -> {
+                    shape.setFill(Color.TRANSPARENT);
+                    shape.setStroke(colorObjectHandler.getNextColor());
+                    shape.setStrokeWidth(1);
+                });
+            } else {
+                shapesCollection.forEach(shape -> shape.setFill(colorObjectHandler.getNextColor()));
+            }
             group.getChildren().addAll(shapesCollection);
         }
     }
@@ -239,13 +244,14 @@ public class RightPaneController implements Initializable {
     /**
      * Add immersed objects to the meshGroup
      *
-     * @param meshGroup the mesh group
+     * @param meshGroup          the mesh group
+     * @param colorObjectHandler the color object handler to choose the color of each object
      */
-    private void addImmersedObjects(Group meshGroup) {
+    private void addImmersedObjects(Group meshGroup, ColorObjectHandler colorObjectHandler) {
         // For each mesh, create a MeshView with its own color
         double scaleFactor = DomainProperties.getInstance().getScaleFactor();
         for (CFDTriangleMesh objectMesh : allMeshes.values()) {
-            Color objectColor = objectMesh.getColor();
+            Color objectColor = colorObjectHandler.getNextColor();
             List<Node> objectNodes;
             if (!objectMesh.is3D()) {
                 // For 2D objects, use createColoredLines to apply coloring.

@@ -105,6 +105,7 @@ public class BoundaryDefinitionController extends ValidAndCancelController imple
 
     @Override
     protected boolean customValidate() {
+        if (fxmlLoader == null) return false; // this serves as a check on save of a boundary without a comboBox type which instanciate the baseboundary added to the definitionBoundary
         BaseBoundaryController currentBaseBoundaryController = fxmlLoader.getController();
         // check if the shape data is valid
         if (!currentBaseBoundaryController.checkValidCommit()) return false;
@@ -113,10 +114,12 @@ public class BoundaryDefinitionController extends ValidAndCancelController imple
             // in case of new boundary definition and condition not defined yet
             EventManager.fireCustomEvent(new CustomEvent(INVALID_CONDITION));
         }
+        // to retrieve accurately the previous instance of boundary in the state service
+        String oldName = nameInitialValue;
         // commit changes
         commitValues(currentBaseBoundaryController);
         // fire alert for new boundary validated and to allow the creation of new boundary
-        EventManager.fireCustomEvent(new CustomEvent(EventEnum.BOUNDARY_VALIDATED, this));
+        EventManager.fireCustomEvent(new CustomEvent(EventEnum.BOUNDARY_VALIDATED,this));
         EventManager.fireCustomEvent(new CustomEvent(EventEnum.ALLOW_NEW_BOUNDARY_DEF));
         return true;
     }
@@ -297,6 +300,11 @@ public class BoundaryDefinitionController extends ValidAndCancelController imple
         dynamicShapeContainer.getChildren().add(baseBoundaryController.getShapeGridpane());
         // Show remove button
         // KAN-76 removeButton.setVisible(true);
+    }
+
+    @Override
+    public boolean hasDirtyFields() {
+        return (super.hasDirtyFields() || (comboBoxInitialValue == null)) && (baseBoundaryController == null || baseBoundaryController.hasDirtyFields());
     }
 
     public boolean isStandardShape() {

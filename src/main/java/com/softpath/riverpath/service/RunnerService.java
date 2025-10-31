@@ -3,13 +3,10 @@ package com.softpath.riverpath.service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.softpath.riverpath.controller.BoundaryConditionController;
-import com.softpath.riverpath.controller.BoundaryConditionGlobalController;
-import com.softpath.riverpath.controller.BoundaryDefinitionController;
-import com.softpath.riverpath.controller.HalfPlaneBoundaryController;
-import com.softpath.riverpath.controller.LeftBottomPaneController;
-import com.softpath.riverpath.controller.MainController;
-import com.softpath.riverpath.controller.MeshingParametersController;
+import com.softpath.riverpath.controller.*;
+import com.softpath.riverpath.custom.event.CustomEvent;
+import com.softpath.riverpath.custom.event.EventEnum;
+import com.softpath.riverpath.custom.event.EventManager;
 import com.softpath.riverpath.model.Boundary;
 import com.softpath.riverpath.model.BoundaryCondition;
 import com.softpath.riverpath.model.Coordinates;
@@ -61,18 +58,16 @@ public class RunnerService {
         this.leftBottomPaneController = leftBottomPaneController;
         this.workspaceDirectory = workspaceDirectory;
         velocityEngine = new VelocityEngine();
-        velocityEngine.setProperty("resource.loaders", "class");
-        velocityEngine.setProperty("resource.loader.class.class",
+        velocityEngine.setProperty("resource.loader", "class");
+        velocityEngine.setProperty("class.resource.loader.class",
                 "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         velocityEngine.init();
     }
 
 
     public void generateAllMTCFiles(String domainMesh) {
-        Simulation simulation = new Simulation();
+        Simulation simulation = SimulationStateService.getInstance().getCurrentSimulation();
         // set domain mesh file name
-        simulation.setDomainMeshFile(domainMesh);
-        mergeDomainFileTemplate(simulation);
         // generate GeometresE.mtc
         mergeBoundaryDefTemplate(simulation);
         // generate CLMecanique.mtc
@@ -86,16 +81,12 @@ public class RunnerService {
 
         try {
             mapper.writeValue(new File(workspaceDirectory, "simulation.json"), simulation);
+            EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_RUN_FIRED));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void mergeDomainFileTemplate(Simulation simulation) {
-        VelocityContext context = new VelocityContext();
-        context.put("domain_file", simulation.getDomainMeshFile());
-        mergeContextToTemplate("Maillage","maillage.mtc", "maillage.vm", context);
-    }
     private void mergeBoundaryDefTemplate(Simulation simulation) {
         int index = 1;
         StringBuilder allBoundaryDef = new StringBuilder();
@@ -262,7 +253,7 @@ public class RunnerService {
         context.put("id", String.valueOf(index));
         context.put("degx", controller.getVxValue().getText() != null ? "Un" : "Zero");
         context.put("degy", controller.getVyValue().getText() != null ? "Un" : "Zero");
-        context.put("pressureGiven", StringUtils.isEmpty(controller.getPressureValue().getText()) ? "Zero" : "Un");
+        context.put("pressureGiven", controller.getPressureValue().getText() != null ? "Un" : "Zero");
         context.put("vx", StringUtils.equals(controller.getVxValue().getText(), "1") ? "Un" : "Zero");
         context.put("vy", StringUtils.equals(controller.getVyValue().getText(), "1") ? "Un" : "Zero");
         context.put("pressureValue", StringUtils.equals(controller.getPressureValue().getText(), "1") ? "Un" : "Zero");

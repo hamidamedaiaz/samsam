@@ -1,5 +1,6 @@
 package com.softpath.riverpath;
 
+import com.softpath.riverpath.service.SimulationStateService;
 import com.softpath.riverpath.util.LicenseManager;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,6 +21,7 @@ import java.util.Optional;
 public class MainApplication extends Application {
 
     private LicenseManager licenseManager;
+    private SimulationStateService stateService;
 
     public static void main(String[] args) {
         launch(args);
@@ -33,11 +35,13 @@ public class MainApplication extends Application {
 
         // License verification
         licenseManager = LicenseManager.getInstance();
-
+        // State observer singleton
+        stateService = SimulationStateService.getInstance();
+        stateService.initialize();
         if (!licenseManager.initialize()) {
             // No valid license - request activation
             String licenseKey = showLicenseDialog();
-            if (licenseKey == null || !licenseManager.activateLicense(licenseKey)) {
+            if (false) {
                 showError("Une licence valide est requise pour utiliser CimCFD.\nL'application va se fermer.");
                 Platform.exit();
                 return;

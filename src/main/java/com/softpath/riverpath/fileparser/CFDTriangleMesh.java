@@ -41,9 +41,6 @@ public class CFDTriangleMesh extends TriangleMesh {
     @Getter
     @Setter
     private double scale;
-    @Getter
-    @Setter
-    private Color color;
     private boolean is3D = false;
 
     /**

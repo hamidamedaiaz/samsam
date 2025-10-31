@@ -1,8 +1,10 @@
 package com.softpath.riverpath.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.softpath.riverpath.custom.event.CustomEvent;
+import com.softpath.riverpath.custom.event.EventEnum;
+import com.softpath.riverpath.custom.event.EventManager;
 import com.softpath.riverpath.model.Boundary;
-import com.softpath.riverpath.model.HalfPlaneBoundary;
 import com.softpath.riverpath.model.Simulation;
 import com.softpath.riverpath.util.UtilityClass;
 import javafx.application.Platform;
@@ -45,6 +47,7 @@ public class ImportProjectController {
         // If a directory is selected, import the project
         if (selectedDirectory != null) {
             try {
+                EventManager.fireCustomEvent(new CustomEvent(EventEnum.IMPORT_PROJECT, selectedDirectory));
                 importProject(selectedDirectory);
             } catch (Exception e) {
                 Platform.runLater(() -> {
@@ -57,6 +60,7 @@ public class ImportProjectController {
     private void importProject(File projectDirectory) throws IOException {
         // Encapsulate project description in #Simulation.java object
         File simulationJsonFile = new File(projectDirectory, "simulation.json");
+
         if (!simulationJsonFile.exists()) {
             Platform.runLater(() -> mainController.displayMessageConsoleOutput("simulation.json file not found in "
                     + "the selected directory."));

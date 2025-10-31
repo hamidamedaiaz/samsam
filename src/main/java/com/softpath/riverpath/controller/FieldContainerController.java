@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.TextField;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
@@ -21,8 +22,9 @@ import static com.softpath.riverpath.util.UtilityClass.flagTextFieldWarning;
  */
 public abstract class FieldContainerController {
 
+    @Getter
     private final List<TextFieldHandler> textFieldHandlers = new ArrayList<>();
-
+    @Getter
     private final List<HyperLinkFieldHandler> hyperLinkFieldHandlers = new ArrayList<>();
 
     @FXML
@@ -57,6 +59,21 @@ public abstract class FieldContainerController {
         hyperLinkFieldHandlers.forEach(HyperLinkFieldHandler::commit);
     }
 
+    public boolean hasDirtyFields() {
+        if (this.getTextFieldHandlers() != null) {
+            for (TextFieldHandler tfh : this.getTextFieldHandlers()) {
+                if (tfh.isDirty()) return true;
+            }
+        }
+
+        if (this.getHyperLinkFieldHandlers() != null) {
+            for (HyperLinkFieldHandler hlf : this.getHyperLinkFieldHandlers()) {
+                if (hlf.isDirty()) return true;
+            }
+        }
+
+        return false;
+    }
     /**
      * Rollback all text fields
      */
