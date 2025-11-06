@@ -41,10 +41,4 @@ public class CustomEvent extends Event {
         this.newValue = newValue;
     }
 
-    public CustomEvent(EventEnum eventEnum, String message, Object object) {
-        super(EventType.ROOT);
-        this.eventEnum = eventEnum;
-        this.object = object;
-        this.message = message;
-    }
 }

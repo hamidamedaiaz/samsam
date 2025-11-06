@@ -13,11 +13,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @NoArgsConstructor
 @Getter
-@Slf4j
 public class TimeDiscretizationController extends ValidAndCancelController {
 
     @FXML
@@ -46,7 +44,7 @@ public class TimeDiscretizationController extends ValidAndCancelController {
     @Override
     protected boolean customValidate() {
         // fire time discretization valid event
-        EventManager.fireCustomEvent(new CustomEvent(EventEnum.TIME_DISCRETIZATION_VALID, this));
+        EventManager.fireCustomEvent(new CustomEvent(EventEnum.TIME_DISCRETIZATION_VALID));
         // fire total increment event
         EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_TOTAL_INCREMENT_VALUE, getTotalIncrement()));
         return  true;
@@ -71,16 +69,10 @@ public class TimeDiscretizationController extends ValidAndCancelController {
      * @param simulation Simulation object
      */
     protected void importData(Simulation simulation) {
-        try{
-            if (!simulation.getTimeStep().isEmpty() || !simulation.getTotalTime().isEmpty() || !simulation.getFrequency().isEmpty()) {
-                timeStep.setText(simulation.getTimeStep());
-                totalTime.setText(simulation.getTotalTime());
-                storageFrequency.setText(simulation.getFrequency());
-                handleValidate(null);
-            }
-        }catch(NullPointerException e){
-            log.warn("No data to import for module");
-        }
+        timeStep.setText(simulation.getTimeStep());
+        totalTime.setText(simulation.getTotalTime());
+        storageFrequency.setText(simulation.getFrequency());
+        handleValidate(null);
     }
 
     /**

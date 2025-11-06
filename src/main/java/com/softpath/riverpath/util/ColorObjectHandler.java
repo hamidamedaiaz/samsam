@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ColorObjectHandler {
 
-    private static final List<Color> IMMERSED_OBJECT_COLORS = Arrays.asList(Color.BLUE, Color.YELLOW, Color.RED, Color.GREEN, Color.ORANGE, Color.PURPLE, Color.CYAN, Color.AQUAMARINE, Color.SIENNA, Color.MAGENTA);
+    private static final List<Color> IMMERSED_OBJECT_COLORS = Arrays.asList(Color.BLUE, Color.GREEN, Color.ORANGE, Color.PURPLE, Color.CYAN, Color.AQUAMARINE, Color.SIENNA, Color.MAGENTA, Color.RED,Color.YELLOWGREEN);
     private int colorIndex = 0;
 
     public Color getNextColor() {

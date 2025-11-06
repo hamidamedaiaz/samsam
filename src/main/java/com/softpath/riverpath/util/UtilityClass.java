@@ -44,12 +44,11 @@ import static com.softpath.riverpath.custom.event.EventEnum.CONVERT_PYTHON_PROCE
  */
 public class UtilityClass {
 
-    public static File workspaceDirectory;
     private static final String ZERO = "0";
     private static final String DOT = ".";
     private static final String EMPTY = "";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-
+    public static File workspaceDirectory;
     // Cache for the embedded Python path
     private static String embeddedPythonPath = null;
     private static boolean pythonExtracted = false;
@@ -100,8 +99,7 @@ public class UtilityClass {
             }
 
             // Reading JAR entries
-            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI()))) {
+            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain().getCodeSource().getLocation().toURI()))) {
 
                 Enumeration<JarEntry> entries = jarFile.entries();
                 while (entries.hasMoreElements()) {
@@ -112,8 +110,7 @@ public class UtilityClass {
                         targetFile.getParentFile().mkdirs();
 
                         // Copy the file
-                        try (InputStream jarIn = jarFile.getInputStream(entry);
-                             FileOutputStream out = new FileOutputStream(targetFile)) {
+                        try (InputStream jarIn = jarFile.getInputStream(entry); FileOutputStream out = new FileOutputStream(targetFile)) {
                             byte[] buffer = new byte[8192];
                             int bytesRead;
                             while ((bytesRead = jarIn.read(buffer)) != -1) {
@@ -183,12 +180,10 @@ public class UtilityClass {
                 return embeddedPythonPath;
             }
 
-            EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE,
-                    "Embedded Python extraction..."));
+            EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "Embedded Python extraction..."));
 
             // Extract ONLY the essential files from the JAR
-            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI()))) {
+            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain().getCodeSource().getLocation().toURI()))) {
 
                 Enumeration<JarEntry> entries = jarFile.entries();
                 int extractedFiles = 0;
@@ -197,8 +192,7 @@ public class UtilityClass {
                     JarEntry entry = entries.nextElement();
 
                     // Filter ONLY essential files
-                    if (entry.getName().startsWith("python/") && !entry.isDirectory() &&
-                            isEssentialPythonFile(entry.getName())) {
+                    if (entry.getName().startsWith("python/") && !entry.isDirectory() && isEssentialPythonFile(entry.getName())) {
 
                         // Create the destination file
                         String relativePath = entry.getName().substring("python/".length());
@@ -220,8 +214,7 @@ public class UtilityClass {
                     }
                 }
 
-                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE,
-                        "✅ " + extractedFiles + " Extracted Python files"));
+                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "✅ " + extractedFiles + " Extracted Python files"));
             }
 
             if (embeddedPythonPath == null) {
@@ -298,25 +291,18 @@ public class UtilityClass {
         String pythonExecutable = getEmbeddedPythonPath();
 
         // Log for debugging
-        EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE,
-                "Conversion mesh: " + selectedFile.getName()));
+        EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "Conversion mesh: " + selectedFile.getName()));
 
         String fileExtentionT = buildTExtentionName(selectedFile);
         File pythonOutputFile = new File(workspaceDirectory, fileExtentionT);
 
         // Prepare the Python command
-        List<String> command = Arrays.asList(
-                pythonExecutable,
-                "gmsh4mtc.py",
-                selectedFile.getAbsolutePath(),
-                pythonOutputFile.getAbsolutePath()
-        );
+        List<String> command = Arrays.asList(pythonExecutable, "gmsh4mtc.py", selectedFile.getAbsolutePath(), pythonOutputFile.getAbsolutePath());
 
         int exitCode = runCommand(workspaceDirectory, command, false);
 
         if (exitCode != 0) {
-            throw new RuntimeException("Error converting mesh file to .t with embedded Python. " +
-                    "Exit code: " + exitCode);
+            throw new RuntimeException("Error converting mesh file to .t with embedded Python. " + "Exit code: " + exitCode);
         }
 
         return fileExtentionT;
@@ -380,8 +366,7 @@ public class UtilityClass {
 
         } catch (Exception e) {
             if (!silent) {
-                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE,
-                        "Runtime error: " + e.getMessage()));
+                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "Runtime error: " + e.getMessage()));
             }
             throw new RuntimeException(e);
         }
@@ -394,18 +379,12 @@ public class UtilityClass {
      */
     private static boolean shouldDisplayError(String line) {
         // Filter known NumPy warnings
-        if (line.contains("DeprecationWarning") ||
-                line.contains("Arrays of 2-dimensional vectors are deprecated") ||
-                line.contains("in1d is deprecated") ||
-                line.contains("Use arrays of 3-dimensional vectors instead") ||
-                line.contains("Use `np.isin` instead")) {
+        if (line.contains("DeprecationWarning") || line.contains("Arrays of 2-dimensional vectors are deprecated") || line.contains("in1d is deprecated") || line.contains("Use arrays of 3-dimensional vectors instead") || line.contains("Use `np.isin` instead")) {
             return false;
         }
 
         // Filter other non-critical warnings
-        return !line.contains("FutureWarning") &&
-                !line.contains("UserWarning") &&
-                !line.contains("RuntimeWarning");// Show real errors
+        return !line.contains("FutureWarning") && !line.contains("UserWarning") && !line.contains("RuntimeWarning");// Show real errors
     }
 
     public static String buildTExtentionName(File selectedFile) {
@@ -447,11 +426,7 @@ public class UtilityClass {
     }
 
     public static void handleTextWithDigitOnly(KeyEvent event) {
-        if (!KeyCode.LEFT.equals(event.getCode()) &
-                !KeyCode.RIGHT.equals(event.getCode()) &
-                !KeyCode.UP.equals(event.getCode()) &
-                !KeyCode.DOWN.equals(event.getCode())
-        ) {
+        if (!KeyCode.LEFT.equals(event.getCode()) & !KeyCode.RIGHT.equals(event.getCode()) & !KeyCode.UP.equals(event.getCode()) & !KeyCode.DOWN.equals(event.getCode())) {
             TextField textField = (TextField) event.getSource();
             boolean startWithMinus = StringUtils.startsWith(textField.getText(), "-");
             textField.setText(StringUtils.removeStart(textField.getText(), "-"));
@@ -467,9 +442,7 @@ public class UtilityClass {
                     }
                     textField.setText(currentText);
                     textField.positionCaret(textField.getText().length());
-                } else if (StringUtils.startsWith(currentText, ZERO)
-                        && !StringUtils.startsWith(currentText, "0.")
-                        && !StringUtils.equals(currentText, ZERO)) {
+                } else if (StringUtils.startsWith(currentText, ZERO) && !StringUtils.startsWith(currentText, "0.") && !StringUtils.equals(currentText, ZERO)) {
                     textField.setText(StringUtils.removeStart(currentText, ZERO));
                     textField.positionCaret(textField.getText().length());
                 }
@@ -616,5 +589,20 @@ public class UtilityClass {
             textField.positionCaret(textField.getText().length());
         }
         return currentText;
+    }
+
+    /**
+     * @param textField a field element that is being checked by
+     *                  {@link #handleTextWithDigitOnly(KeyEvent)}.
+     *                  We reformat the text to a standard Java double print
+     *                  for all cases, when focus is lost.
+     */
+    public static void prettyPrintDouble(TextField textField) {
+        try {
+            double prettyVal = Double.parseDouble(textField.getText());
+
+            textField.setText(String.valueOf(prettyVal));
+        } catch (Exception ignored) {
+        }
     }
 }

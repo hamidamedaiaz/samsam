@@ -43,7 +43,7 @@
                    onKeyReleased="#handleKeyReleased"/>
 
         <Label text="Priority" GridPane.rowIndex="3"/>
-        <TextField fx:id="priorityValue" promptText="0" GridPane.columnIndex="1" GridPane.rowIndex="3"
+        <TextField fx:id="priorityValue" GridPane.columnIndex="1" GridPane.rowIndex="3"
                    onKeyReleased="#handleKeyReleased"/>
 
         <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5"> <!-- Modification de l'index de ligne -->
