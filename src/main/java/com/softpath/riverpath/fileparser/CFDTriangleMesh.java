@@ -17,11 +17,8 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * Class to store metadata of a mesh
@@ -39,12 +36,17 @@ public class CFDTriangleMesh extends TriangleMesh {
     @Getter
     private final List<MyTriangle> borderLines = new ArrayList<>();
     @Getter
+    private final List<MyTriangle> borderLines3D = new ArrayList<>();
+    @Getter
     @Setter
     private double scale;
     @Getter
     @Setter
     private Color color;
     private boolean is3D = false;
+    @Getter
+    @Setter
+    private Point3D position = new Point3D(0, 0, 0);
 
     /**
      * Add a point to the mesh
@@ -84,6 +86,11 @@ public class CFDTriangleMesh extends TriangleMesh {
         triangles.add(new MyTriangle(vertex1, vertex2, vertex3));
     }
 
+    public void addTriangleAndLines3D(int vertex1, int vertex2, int vertex3) {
+        getFaces().addAll(vertex1, 0, vertex2, 0, vertex3, 0);
+        borderLines3D.add(new MyTriangle(vertex1, vertex2, vertex3));
+    }
+
     /**
      * Add a new object to the current mesh
      *
@@ -118,59 +125,6 @@ public class CFDTriangleMesh extends TriangleMesh {
     }
 
     /**
-     * Parse borderlines represented as triangles and create colored lines
-     *
-     * @return the lines
-     */
-    private Set<EdgeKey> detectBorderEdges() {
-        // Finding the limits of volume
-        double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
-        double minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
-
-        for (Point3D point : vertexMap.values()) {
-            minX = Math.min(minX, point.getX());
-            maxX = Math.max(maxX, point.getX());
-            minY = Math.min(minY, point.getY());
-            maxY = Math.max(maxY, point.getY());
-            minZ = Math.min(minZ, point.getZ());
-            maxZ = Math.max(maxZ, point.getZ());
-        }
-
-        Set<EdgeKey> borderEdges = new HashSet<>();
-        double tolerance = 0.001; // Tolérance pour la comparaison des flottants
-
-        // For each triangle
-        for (MyTriangle triangle : triangles) {
-            checkAndAddBorderEdge(triangle.vertex1, triangle.vertex2, minX, maxX, minY, maxY, minZ, maxZ, tolerance, borderEdges);
-            checkAndAddBorderEdge(triangle.vertex2, triangle.vertex3, minX, maxX, minY, maxY, minZ, maxZ, tolerance, borderEdges);
-            checkAndAddBorderEdge(triangle.vertex3, triangle.vertex1, minX, maxX, minY, maxY, minZ, maxZ, tolerance, borderEdges);
-        }
-
-        return borderEdges;
-    }
-
-    private void checkAndAddBorderEdge(int v1, int v2, double minX, double maxX, double minY, double maxY,
-                                       double minZ, double maxZ, double tolerance, Set<EdgeKey> borderEdges) {
-        Point3D p1 = vertexMap.get(v1);
-        Point3D p2 = vertexMap.get(v2);
-
-        // An edge is on the contour if its two points are on the same outer face.
-        boolean isOnXFace = (Math.abs(p1.getX() - minX) < tolerance && Math.abs(p2.getX() - minX) < tolerance) ||
-                (Math.abs(p1.getX() - maxX) < tolerance && Math.abs(p2.getX() - maxX) < tolerance);
-
-        boolean isOnYFace = (Math.abs(p1.getY() - minY) < tolerance && Math.abs(p2.getY() - minY) < tolerance) ||
-                (Math.abs(p1.getY() - maxY) < tolerance && Math.abs(p2.getY() - maxY) < tolerance);
-
-        boolean isOnZFace = (Math.abs(p1.getZ() - minZ) < tolerance && Math.abs(p2.getZ() - minZ) < tolerance) ||
-                (Math.abs(p1.getZ() - maxZ) < tolerance && Math.abs(p2.getZ() - maxZ) < tolerance);
-
-        if (isOnXFace || isOnYFace || isOnZFace) {
-            borderEdges.add(new EdgeKey(v1, v2));
-        }
-    }
-
-    /**
      * Parse all triangles and create lines
      *
      * @param scale the scale of the line
@@ -190,9 +144,10 @@ public class CFDTriangleMesh extends TriangleMesh {
     public List<Node> createColoredBorderLines(double scale, Color color) {
         List<Node> lines = new ArrayList<>();
         if (is3D) {
-            Set<EdgeKey> borderEdges = detectBorderEdges();
-            for (EdgeKey edge : borderEdges) {
-                lines.add(createLine3D(edge.v1, edge.v2, scale, color));
+            for (MyTriangle t : borderLines3D) {
+                lines.add(createLine3D(t.vertex1, t.vertex2, scale, color));
+                lines.add(createLine3D(t.vertex2, t.vertex3, scale, color));
+                lines.add(createLine3D(t.vertex3, t.vertex1, scale, color));
             }
         } else {
             borderLines.forEach(
@@ -234,9 +189,13 @@ public class CFDTriangleMesh extends TriangleMesh {
         Point3D point1 = getVertexCoordinates(vertex1);
         Point3D point2 = getVertexCoordinates(vertex2);
 
+        double originX = position.getX() * scale;
+        double originY = position.getY() * scale;
         Line line = new Line(
-                point1.getX() * scale, -point1.getY() * scale,
-                point2.getX() * scale, -point2.getY() * scale
+                point1.getX() * scale + originX,
+                -point1.getY() * scale - originY,
+                point2.getX() * scale + originX,
+                -point2.getY() * scale - originY
         );
         line.setStroke(color);
 
@@ -276,34 +235,5 @@ public class CFDTriangleMesh extends TriangleMesh {
         private final int vertex1;
         private final int vertex2;
         private final int vertex3;
-    }
-
-    @Getter
-    private static class EdgeKey {
-        private final int v1, v2;
-
-        public EdgeKey(int v1, int v2) {
-            // Toujours stocker dans l'ordre pour assurer l'unicité
-            if (v1 < v2) {
-                this.v1 = v1;
-                this.v2 = v2;
-            } else {
-                this.v1 = v2;
-                this.v2 = v1;
-            }
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            EdgeKey edgeKey = (EdgeKey) o;
-            return v1 == edgeKey.v1 && v2 == edgeKey.v2;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(v1, v2);
-        }
     }
 }

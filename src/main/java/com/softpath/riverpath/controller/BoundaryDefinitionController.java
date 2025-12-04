@@ -65,15 +65,15 @@ public class BoundaryDefinitionController extends ValidAndCancelController imple
     private HBox originHBox;
     @FXML
     @Getter
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     private TextField originX;
     @FXML
     @Getter
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     private TextField originY;
     @FXML
     @Getter
-    @ValidatedField(is3D = true)
+    @ValidatedField(is3D = true, isDouble = true)
     private TextField originZ;
     @FXML
     //@ValidatedField
@@ -105,6 +105,8 @@ public class BoundaryDefinitionController extends ValidAndCancelController imple
 
     @Override
     protected boolean customValidate() {
+        if (fxmlLoader == null)
+            return false; // this serves as a check on save of a boundary without a comboBox type which instanciate the baseboundary added to the definitionBoundary
         BaseBoundaryController currentBaseBoundaryController = fxmlLoader.getController();
         // check if the shape data is valid
         if (!currentBaseBoundaryController.checkValidCommit()) return false;
@@ -297,6 +299,18 @@ public class BoundaryDefinitionController extends ValidAndCancelController imple
         dynamicShapeContainer.getChildren().add(baseBoundaryController.getShapeGridpane());
         // Show remove button
         // KAN-76 removeButton.setVisible(true);
+    }
+
+    @Override
+    public boolean hasDirtyFields() {
+        boolean isTopDirty = super.hasDirtyFields() || comboBoxInitialValue == null;
+        boolean isNestedDirty = (baseBoundaryController != null && baseBoundaryController.hasDirtyFields()) || getCurrentBaseBoundaryController().hasDirtyFields(); // current and previous nested boundary elements
+
+        return isTopDirty || isNestedDirty;
+    }
+
+    private BaseBoundaryController getCurrentBaseBoundaryController() {
+        return fxmlLoader.getController();
     }
 
     public boolean isStandardShape() {

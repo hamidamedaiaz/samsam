@@ -25,11 +25,11 @@ public class HalfPlaneBoundaryController extends BaseBoundaryController {
     @FXML
     private Label normalLabel;
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     @Getter
     private TextField normalX;
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     @Getter
     private TextField normalY;
 

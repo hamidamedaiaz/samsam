@@ -41,6 +41,6 @@ public class Simulation {
      * @return Boundary by name
      */
     public Boundary getBoundarybyName(String name) {
-        return boundaries.stream().filter(boundary -> boundary.getName().equals(name)).findAny().orElseThrow();
+        return boundaries.stream().filter(boundary -> boundary.getName().equals(name)).findAny().orElse(null);
     }
 }

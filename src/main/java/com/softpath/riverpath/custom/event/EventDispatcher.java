@@ -4,7 +4,9 @@ package com.softpath.riverpath.custom.event;
 
 import javafx.event.EventHandler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class EventDispatcher {
@@ -12,7 +14,7 @@ public class EventDispatcher {
     private static EventDispatcher instance;
 
     // Map to store event handlers for different event types
-    private final Map<EventEnum, EventHandler<CustomEvent>> eventHandlers = new HashMap<>();
+    private final Map<EventEnum, List<EventHandler<CustomEvent>>> eventHandlers = new HashMap<>();
 
     private EventDispatcher() {
     }
@@ -27,14 +29,19 @@ public class EventDispatcher {
 
     // A method to add an event handler for a specific event type
     public void addEventHandler(EventEnum eventEnum, EventHandler<CustomEvent> eventHandler) {
-        eventHandlers.put(eventEnum, eventHandler);
+        if (eventHandlers.containsKey(eventEnum)) {
+            eventHandlers.get(eventEnum).add(eventHandler);
+        } else {
+            List<EventHandler<CustomEvent>> handlers = new ArrayList<>();
+            handlers.add(eventHandler);
+            eventHandlers.put(eventEnum, handlers);
+        }
     }
 
     // A method to dispatch an event to its handlers
     public void dispatchEvent(CustomEvent event) {
-        EventHandler<CustomEvent> eventHandler = eventHandlers.get(event.getEventEnum());
-        if (eventHandler != null) {
-            eventHandler.handle(event);
+        for (EventHandler<CustomEvent> h : eventHandlers.get(event.getEventEnum())) {
+            h.handle(event);
         }
     }
 }

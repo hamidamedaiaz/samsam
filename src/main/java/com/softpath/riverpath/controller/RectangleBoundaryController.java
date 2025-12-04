@@ -22,11 +22,11 @@ import lombok.NoArgsConstructor;
 public class RectangleBoundaryController extends BaseBoundaryController {
 
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     @Getter
     private TextField rectangleWidth;
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     @Getter
     private TextField rectangleHeight;
 

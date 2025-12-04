@@ -99,11 +99,12 @@ public class ProjectSetupController implements Initializable {
         // convert it to triangle mesh
         if (selectedFile != null) {
             UtilityClass.createWorkspace(selectedFile);
-            // convert msh file to .t file using python program gmsh4mtc.py
+            // convert msh file to .t file using python program gmsh4mtc.exe
             domainExtentionT = convertMshPython(selectedFile);
             // display the mesh
             displayDomain(new File(workspaceDirectory, domainExtentionT));
         }
+        EventManager.fireCustomEvent(new CustomEvent(NEW_PROJECT, domainExtentionT));
     }
 
     /**
@@ -126,7 +127,7 @@ public class ProjectSetupController implements Initializable {
         CFDTriangleMesh triangleMesh = parseFile2TriangleMesh(meshFileExtentionT);
         // add it to the right pane
         mainController.getRightPaneController().initiateDomain(triangleMesh);
-        mainController.getRightPaneController().displayMesh();
+        mainController.getRightPaneController().applySelectedDisplayMode();
         importMSHButton.setStyle(FX_BASE_LIGHTGREEN);
         boundaryButton.setDisable(false);
         mainController.displayMessageConsoleOutput("File imported successfully");
@@ -182,7 +183,6 @@ public class ProjectSetupController implements Initializable {
         } catch (RuntimeException ex) {
             log.error(ex.getMessage(), ex);
             mainController.displayMessageConsoleOutput("Error while setting up the project: " + ex.getMessage());
-            return;
         }
         // disable run button and show stop button
         runButton.setDisable(true);
@@ -223,6 +223,7 @@ public class ProjectSetupController implements Initializable {
                 }
             }
         } catch (InterruptedException ex) {
+            log.error("CIMLib process was interrupted", ex);
             Platform.runLater(() -> {
                 mainController.displayMessageConsoleOutput("Error: " + ex.getMessage());
                 stopButton.setVisible(false);
@@ -256,6 +257,7 @@ public class ProjectSetupController implements Initializable {
             // Step 3: Wait for the task to complete (future.get will return null)
             future.get();
         } catch (Exception ex) {
+            log.error("Error reading process output", ex);
             mainController.displayMessageConsoleOutput(ex.getMessage());
         } finally {
             // flush remaining logs
@@ -330,7 +332,7 @@ public class ProjectSetupController implements Initializable {
             leftBottomPaneController.removeBoundaryDefinition(boundaryDefinitionController);
             mainController.getRightPaneController().removeAndDisplay(boundaryDefinitionController);
             leftBottomPaneController.displayAllBoundaries();
-            mainController.getRightPaneController().displayMesh();
+            mainController.getRightPaneController().applySelectedDisplayMode();
             handleModificationOrValidationAction();
         });
     }

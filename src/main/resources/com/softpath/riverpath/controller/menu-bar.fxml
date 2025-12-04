@@ -23,6 +23,7 @@
             <Menu text="File">
                 <MenuItem text="New Project" onAction="#handleNewProject"/>
                 <MenuItem text="Import Project" onAction="#handleImportProject"/>
+                <MenuItem text="Save changes" onAction="#handleSaveProjectChanges"/>
                 <MenuItem text="Close" onAction="#handleClose"/>
             </Menu>
             <Menu text="Edit">

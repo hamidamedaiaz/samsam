@@ -199,4 +199,57 @@ public class LeftBottomPaneController {
         clearPane();
         leftBottomPane.getChildren().addAll(meshingParametersController.getTitledPane());
     }
+
+    public boolean hasUIResourcesToValidate() {
+        // boundaries
+        for (BoundaryDefinitionController ctr : boundaryDefinitionControllers) {
+            if (ctr.hasDirtyFields()) return true;
+        }
+        // we should also make sure all clicks on add new boundary will produce an object to be checked in the set, if not retrieve them and test them
+        // we should also make sure the baseboundary fields are handled inside the boundary def
+
+        // conditions
+        for (BoundaryConditionController ctr : conditionGlobalController.getAllConditions()) {
+            if (ctr.hasDirtyFields()) return true;
+        }
+
+        // engineering data
+        if (dataEngineeringController.hasDirtyFields()) return true;
+
+        // meshing parameters
+        if (meshingParametersController.hasDirtyFields()) return true;
+
+        // time discretization
+        if (timeDiscretizationController.hasDirtyFields()) return true;
+
+        return false;
+    }
+
+    public void handleSaveOnExit() { // make this method return to UI if impossible to validate or prompt it
+        // boundaries
+        for (BoundaryDefinitionController ctr : boundaryDefinitionControllers) {
+            if (ctr.hasDirtyFields()) ctr.handleValidate(null);
+        }
+
+        // conditions
+        for (BoundaryConditionController ctr : conditionGlobalController.getAllConditions()) {
+            if (ctr.hasDirtyFields()) ctr.handleValidate(null);
+        }
+
+        // data engineering
+        if (dataEngineeringController.hasDirtyFields()) {
+            dataEngineeringController.handleValidate(null);
+        }
+
+        // meshing parameters
+        if (meshingParametersController.hasDirtyFields()) {
+            meshingParametersController.handleValidate(null);
+        }
+
+        // time discretization
+        if (timeDiscretizationController.hasDirtyFields()) {
+            timeDiscretizationController.handleValidate(null);
+        }
+    }
+
 }

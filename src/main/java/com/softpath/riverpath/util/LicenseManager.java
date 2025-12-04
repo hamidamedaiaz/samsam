@@ -2,6 +2,7 @@ package com.softpath.riverpath.util;
 
 import com.cryptlex.lexactivator.LexActivator;
 import com.cryptlex.lexactivator.LexActivatorException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,6 +13,7 @@ import java.util.prefs.Preferences;
  * Cryptlex license manager for CimCFD
  * @author Max
  */
+@Slf4j
 public class LicenseManager {
 
     private static final String PRODUCT_DATA = "RTIxQzUzNzg4QTk3QkI0OTI4OEMzNzBCNjgyQjhFNzQ=.esSsCynB+bOhRp5HzmMZfkjTOkzzon2aI3sZSzrPH+kACwTUtusZUAcA7NYVtYc4VascxZwrB4gqcEyRytkVuzC6e17+3yPwr+7YV8lvQjeDDol82Q6cHKjpAf9+Y4hDSs9+MWVvvbHmRCwgZOjhW3FAYam5tgPbUKRYOrUak/BfOEkGZUYAKbDHK0Jra0+zHHZ+jX4gwiSvoxPTYJ1E/drN+5SWACrIJZHvMtQBGh9zsBrhOXX2x9/oxiHPShjjAXwvgxVLI+m8RNbeYpPxaLKR69DIux4Ppcs3N5tFN+shilg9LnKAHsWxU/28NHlKsghxZIncqnypiMWJRhoV3XGcMe/LgB6TIJ8TtWYotzjx6Uy/CqJVLlYRyKmna6N5naMTXTFjL7YA/K/3aqqtHfpW1ZVZ4cn5kKRVhiRpodE9ZxwDqfftB14fdH+COURQ4JrXtY/sJpsJ39EHO09LEeK2cqauSi7gaE55agfK0cH56G20jN37TcZRkDJHhRVzw38Gf+6ZeElH7XJ3pJR+XHEM8bkmaOVdGBjvsyq26MxKnZjgt8mbkQfQ611AaQqZVPktu5qeNENgZ4C7LVd3hVCVVRuGn/uCnb1QncdgZbOaOUHdPT2T5JtAMS542QCtWOYYJacpphCJfhZuY0fOKdhAd0Kz1N3sZKS3oAHWA9MXQIVeagLyUQXyViLrbEQpO/1wxnfyjRYq9/9vaANuBCElZRlr3E+8Y+/BBh9yOqX2/UAOJArUVT1A4c/MFDHvU+LcrRSmEKnb0tfp0A4ulCqSeKrV+Dt0tSvGIZXyGlU0a9XflQ9ey+bm9CJtuFoY";
@@ -79,6 +81,7 @@ public class LicenseManager {
             }
             return false;
         } catch (Exception e) {
+            log.error("License initialization failed: ", e);
             return false;
         }
     }
@@ -107,6 +110,7 @@ public class LicenseManager {
             }
             return false;
         } catch (LexActivatorException e) {
+            log.error("License activation failed: ", e);
             return false;
         }
     }
@@ -130,6 +134,7 @@ public class LicenseManager {
             } catch (Exception e) {
                 // In case of a network error, do not close immediately.
                 // We will try again in the next cycle.
+                log.error("Error during license verification: ", e);
             }
         }, 15, 15, TimeUnit.DAYS);
     }

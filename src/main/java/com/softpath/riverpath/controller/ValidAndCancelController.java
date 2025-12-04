@@ -29,13 +29,12 @@ public abstract class ValidAndCancelController extends FieldContainerController 
     @FXML
     protected void handleValidate(ActionEvent event) {
         disableValidateAndCancel();
-        boolean validCommit  = checkValidCommit();
+        boolean validCommit = checkValidCommit();
         boolean customValid = customValidate();
         if (validCommit && customValid) {
             saveFields();
             isNeverValidated = false;
-        }
-        else {
+        } else {
             updateRootModifiedState();
             enableValidateAndCancel();
         }

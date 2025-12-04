@@ -1,5 +1,8 @@
 package com.softpath.riverpath.controller;
 
+import com.softpath.riverpath.custom.event.CustomEvent;
+import com.softpath.riverpath.custom.event.EventEnum;
+import com.softpath.riverpath.custom.event.EventManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -11,9 +14,11 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
+@Slf4j
 public class MenuBarController {
 
     private static final double MIN_WIDTH = 600;
@@ -56,8 +61,33 @@ public class MenuBarController {
     private void handleClose() {
         // Check and stop the simulation if it is running
         if (mainController != null) {
+            String actionOnexit = mainController.showActionsOnExitWithStableState();
+            switch (actionOnexit) {
+                case "SAVE" -> {
+                    mainController.getProjectSetupController().getLeftBottomPaneController().handleSaveOnExit();
+                    if (mainController.getProjectSetupController().getLeftBottomPaneController().hasUIResourcesToValidate()) {// means the validation was not successful
+                        String actionOnValidationError = mainController.promptErrorOnValidation();
+                        switch (actionOnValidationError) {
+                            case "CLOSE_ANYWAY" -> {/*do nothing to pass to next phase*/}
+                            case "RETURN_TO_UI" -> {
+                                return; // close action is canceled
+                            }
+                            default -> {
+                                return; //safeguard rollback
+                            }
+                        }
+                    }
+                    handleSaveProjectChanges();
+                }
+                case "CLOSE_ANYWAY" -> { // here we immediately close, so we just pass to next phase
+                }
+                default -> { //rollback on exit clicked
+                    return;
+                }
+            }
             ProjectSetupController projectSetupController = mainController.getProjectSetupController();
-            if (projectSetupController != null && projectSetupController.getCurrentProcess() != null
+            if (projectSetupController != null
+                    && projectSetupController.getCurrentProcess() != null
                     && projectSetupController.getCurrentProcess().isAlive()) {
 
                 // Stop the simulation
@@ -98,6 +128,11 @@ public class MenuBarController {
         }
     }
 
+    @FXML
+    private void handleSaveProjectChanges() {
+        EventManager.fireCustomEvent(new CustomEvent(EventEnum.SAVED_STATE));
+    }
+
     private void toggleMaximize() {
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
 
@@ -109,14 +144,15 @@ public class MenuBarController {
             stage.setHeight(screenBounds.getHeight());
             isMaximized = true;
         } else {
-            double newWidth = Math.max(MIN_WIDTH, Math.min(screenBounds.getWidth() * 0.75, backupWindowBounds.getWidth()));
-            double newHeight = Math.max(MIN_HEIGHT, Math.min(screenBounds.getHeight() * 0.75, backupWindowBounds.getHeight()));
+            double newWidth = Math.max(MIN_WIDTH, Math.min(screenBounds.getWidth() * 0.75,
+                    backupWindowBounds.getWidth()));
+            double newHeight = Math.max(MIN_HEIGHT, Math.min(screenBounds.getHeight() * 0.75,
+                    backupWindowBounds.getHeight()));
 
             double newX = Math.min(Math.max(screenBounds.getMinX(), backupWindowBounds.getMinX()),
                     screenBounds.getMaxX() - newWidth);
             double newY = Math.min(Math.max(screenBounds.getMinY(), backupWindowBounds.getMinY()),
                     screenBounds.getMaxY() - newHeight);
-
             stage.setX(newX);
             stage.setY(newY);
             stage.setWidth(newWidth);
@@ -165,7 +201,8 @@ public class MenuBarController {
             newStage.setMaximized(true);
             newStage.show();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to create new project", e);
+            mainController.displayMessageConsoleOutput("Error: Unable to create a new project.");
         }
     }
 
@@ -191,7 +228,8 @@ public class MenuBarController {
             ImportProjectController importProjectController = new ImportProjectController(mainController);
             importProjectController.handleImportProject();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to import project", e);
+            mainController.displayMessageConsoleOutput("Error: Unable to import project.");
         }
     }
 }

@@ -61,16 +61,41 @@ public class MeshFileParser {
             String line = scanner.nextLine();
             // Split the line into id1, id2 and id3
             String[] coordinates = line.split(StringUtils.SPACE);
-            int vertex1 = Integer.parseInt(coordinates[0]) - 1;
-            int vertex2 = Integer.parseInt(coordinates[1]) - 1;
-            int vertex3 = Integer.parseInt(coordinates[2]) - 1;
-            // Process the coordinates as needed
-            if (vertex3 == -1) {
-                // it's a border line and not a triangle => back to vertext1
-                triangleMesh.addBorderLine(vertex1, vertex2);
+            if (triangleMesh.is3D()) {
+                parseFaces3D(coordinates, triangleMesh);
             } else {
-                // create a triangle face
-                triangleMesh.addTriangleAndLines(vertex1, vertex2, vertex3);
+                parseFaces2D(coordinates, triangleMesh);
+            }
+        }
+    }
+
+    private static void parseFaces2D(String[] coordinates, CFDTriangleMesh triangleMesh) {
+        {
+            int v1 = Integer.parseInt(coordinates[0]) - 1;
+            int v2 = Integer.parseInt(coordinates[1]) - 1;
+            int v3 = Integer.parseInt(coordinates[2]) - 1;
+            if (v3 == -1) {
+                triangleMesh.addBorderLine(v1, v2);
+            } else {
+                triangleMesh.addTriangleAndLines(v1, v2, v3);
+            }
+        }
+    }
+
+    private static void parseFaces3D(String[] coordinates, CFDTriangleMesh triangleMesh) {
+        {
+            int v1 = Integer.parseInt(coordinates[0]) - 1;
+            int v2 = Integer.parseInt(coordinates[1]) - 1;
+            int v3 = Integer.parseInt(coordinates[2]) - 1;
+            int last = Integer.parseInt(coordinates[3]) - 1;
+            if (last == -1) {
+                triangleMesh.addTriangleAndLines3D(v1, v2, v3);
+            } else {
+
+                triangleMesh.addTriangleAndLines(v1, v2, v3);
+                triangleMesh.addTriangleAndLines(v1, v2, last);
+                triangleMesh.addTriangleAndLines(v2, v3, last);
+                triangleMesh.addTriangleAndLines(v3, v1, last);
             }
         }
     }

@@ -12,4 +12,5 @@ public @interface ValidatedField {
     boolean nullable() default false;
     boolean isUnique() default false;
     boolean is3D() default false;
+    boolean isDouble() default false;
 }

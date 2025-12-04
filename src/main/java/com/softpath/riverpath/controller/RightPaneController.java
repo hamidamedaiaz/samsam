@@ -7,6 +7,7 @@ import com.softpath.riverpath.util.ColorObjectHandler;
 import com.softpath.riverpath.util.DomainProperties;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Point3D;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.SplitPane;
@@ -127,7 +128,7 @@ public class RightPaneController implements Initializable {
     /**
      * Display domain and all objects
      */
-    public void displayMesh() {
+    private void displayMesh() {
         // Simple check - if not initialized, do nothing
         if (domainMeshView == null || rootPane == null) {
             return;
@@ -147,6 +148,15 @@ public class RightPaneController implements Initializable {
         rootPane.getChildren().add(meshGroup);
     }
 
+    public void applySelectedDisplayMode() {
+        if (simpleView.isSelected()) {
+            displayBorderlines();
+        } else {
+            displayMesh();
+        }
+
+    }
+
     /**
      * This method should be called when an object mesh is loaded
      * It merges the domain mesh with the object mesh
@@ -155,10 +165,19 @@ public class RightPaneController implements Initializable {
      * @param controllerID the controller ID handling the immersed object
      * @param objectMesh   the object mesh
      */
-    private void addObject(String controllerID, CFDTriangleMesh objectMesh) {
+    private void addObject(String controllerID, CFDTriangleMesh objectMesh,Coordinates origin, Color existingColor) {
         objectMesh.setScale(DomainProperties.getInstance().getScaleFactor());
-        objectMesh.setColor(colorObjectHandler.getNextColor());
-        objectMesh.
+        objectMesh.setPosition(new Point3D(
+                parseDouble(origin.getX()),
+                parseDouble(origin.getY()),
+                parseDouble(origin.getZ())
+        ));
+
+        if (existingColor != null) {
+            objectMesh.setColor(existingColor);
+        } else {
+            objectMesh.setColor(colorObjectHandler.getNextColor());
+        }
         allMeshes.put(controllerID, objectMesh);
     }
 
@@ -168,6 +187,11 @@ public class RightPaneController implements Initializable {
      * @param boundaryDefinitionController the boundary definition controller
      */
     public void addAndDisplay(BoundaryDefinitionController boundaryDefinitionController) {
+        Color existingColor = null;
+        CFDTriangleMesh existingMesh = allMeshes.get(boundaryDefinitionController.toString());
+        if (existingMesh != null) {
+            existingColor = existingMesh.getColor();
+        }
         // Remove from both collections to ensure no duplicates
         allMeshes.remove(boundaryDefinitionController.toString());
         shapes.remove(boundaryDefinitionController.toString());
@@ -177,7 +201,12 @@ public class RightPaneController implements Initializable {
             addShape(boundaryDefinitionController);
         } else {
             ImmersedBoundaryController immersedController = boundaryDefinitionController.getImmersedBoundaryController();
-            addObject(boundaryDefinitionController.toString(), immersedController.getImmersedObjectMesh());
+            Coordinates origin = new Coordinates(
+                    boundaryDefinitionController.getOriginX().getText(),
+                    boundaryDefinitionController.getOriginY().getText(),
+                    boundaryDefinitionController.getOriginZ().getText()
+            );
+            addObject(boundaryDefinitionController.toString(), immersedController.getImmersedObjectMesh(), origin,existingColor);
         }
 
         if (simpleView.isSelected()) {
@@ -298,5 +327,12 @@ public class RightPaneController implements Initializable {
                 displayBorderlines();
             }
         });
+    }
+    private double parseDouble(String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
     }
 }

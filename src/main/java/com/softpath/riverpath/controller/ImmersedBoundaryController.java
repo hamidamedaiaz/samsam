@@ -49,7 +49,7 @@ public class ImmersedBoundaryController extends BaseBoundaryController {
         Stage stage = new Stage();
         // select mesh file .msh
         File selectedFile = fileChooser.showOpenDialog(stage);
-        // convert msh file to .t file using python program gmsh4mtc.py
+        // convert msh file to .t file using python program gmsh4mtc.exe
         String selectedFileConvertedT = UtilityClass.convertMshPython(selectedFile);
         // store it only if the file is imported and converted successfully
         importObject.setText(selectedFileConvertedT);

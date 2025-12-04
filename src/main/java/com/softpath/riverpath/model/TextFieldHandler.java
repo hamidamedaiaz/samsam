@@ -1,5 +1,6 @@
 package com.softpath.riverpath.model;
 
+import com.softpath.riverpath.util.UtilityClass;
 import com.softpath.riverpath.util.ValidatedField;
 import javafx.scene.control.TextField;
 import lombok.Getter;
@@ -21,13 +22,14 @@ public class TextFieldHandler {
     private final ValidatedField annotatedField;
     // the original value of the text field
     private String lastValidatedValue;
+    private Boolean isFormatting = false;
 
     public TextFieldHandler(TextField field, ValidatedField ann, Runnable changeListener) {
         this.annotatedField = ann;
         this.field = field;
         lastValidatedValue = field.getText();
         field.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!Strings.CI.equals(StringUtils.trimToEmpty(oldValue), StringUtils.trimToEmpty(newValue))) {
+            if (!isFormatting && !Strings.CI.equals(StringUtils.trimToEmpty(oldValue), StringUtils.trimToEmpty(newValue))) {
                 updateTextFieldColor();
                 if (changeListener != null) changeListener.run();
             }
@@ -42,6 +44,12 @@ public class TextFieldHandler {
     }
 
     public void commit() {
+        if (annotatedField.isDouble() && !(annotatedField.nullable() && StringUtils.isBlank(field.getText()))) {
+            isFormatting = true;
+            UtilityClass.prettyPrintDouble(field);
+            isFormatting = false;
+        }
+
         lastValidatedValue = field.getText();
         unflagTextFieldWarning(field);
     }

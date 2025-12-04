@@ -3,6 +3,8 @@ package com.softpath.riverpath.controller;
 import com.softpath.riverpath.custom.event.EventManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.Getter;
@@ -10,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static com.softpath.riverpath.custom.event.EventEnum.CONVERT_PYTHON_PROCESS_MESSAGE;
@@ -62,5 +65,63 @@ public class MainController implements Initializable {
             menuBarController.setStage(stage);
             menuBarController.setMainController(this); // Add this line
         }
+    }
+
+    public String promptErrorOnValidation() {
+        // creating the alert
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("ERREUR DE VALIDATION DE VALEURS");
+        alert.setHeaderText("La validation a échoué. Voulez-vous retourner à votre session?");
+        alert.setContentText("Choisissez une option :");
+
+        // personalise the buttons
+        ButtonType retToUi = new ButtonType("YES");
+        ButtonType closeAnywayBtn = new ButtonType("NO");
+        ButtonType cancelBtn = new ButtonType("CANCEL", ButtonType.CANCEL.getButtonData());
+
+        alert.getButtonTypes().setAll(retToUi, closeAnywayBtn, cancelBtn);
+
+        // Dialog style
+        alert.getDialogPane().setPrefWidth(400);
+
+        // blocking display
+        Optional<ButtonType> result = alert.showAndWait();
+
+        // Return corresponding string for further processing
+        if (result.isPresent()) {
+            if (result.get() == retToUi) return "RETURN_TO_UI";
+            else if (result.get() == closeAnywayBtn) return "CLOSE_ANYWAY";
+            else return "CANCEL";
+        }
+        return "cancel"; // default
+    }
+
+    public String showActionsOnExitWithStableState() {
+        // creating the alert
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Sauvegarder");
+        alert.setHeaderText("Voulez-vous sauvegarder la session en cours ?");
+        alert.setContentText("Choisissez une option :");
+
+        // buttons
+        ButtonType saveBtn = new ButtonType("Save");
+        ButtonType closeAnywayBtn = new ButtonType("Close Anyway");
+        ButtonType cancelBtn = new ButtonType("Cancel", ButtonType.CANCEL.getButtonData());
+
+        alert.getButtonTypes().setAll(saveBtn, closeAnywayBtn, cancelBtn);
+
+        // Dialog style
+        alert.getDialogPane().setPrefWidth(400);
+
+        // blocking display
+        Optional<ButtonType> result = alert.showAndWait();
+
+        // corresponding string for furhter processing
+        if (result.isPresent()) {
+            if (result.get() == saveBtn) return "SAVE";
+            else if (result.get() == closeAnywayBtn) return "CLOSE_ANYWAY";
+            else return "CANCEL";
+        }
+        return "CANCEL"; // default
     }
 }

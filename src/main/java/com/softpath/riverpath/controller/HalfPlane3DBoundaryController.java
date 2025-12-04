@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class HalfPlane3DBoundaryController extends HalfPlaneBoundaryController {
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     @Getter
     private TextField normalZ;
 

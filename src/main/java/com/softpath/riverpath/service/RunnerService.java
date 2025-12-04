@@ -3,13 +3,11 @@ package com.softpath.riverpath.service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.softpath.riverpath.controller.BoundaryConditionController;
-import com.softpath.riverpath.controller.BoundaryConditionGlobalController;
-import com.softpath.riverpath.controller.BoundaryDefinitionController;
-import com.softpath.riverpath.controller.HalfPlaneBoundaryController;
-import com.softpath.riverpath.controller.LeftBottomPaneController;
-import com.softpath.riverpath.controller.MainController;
-import com.softpath.riverpath.controller.MeshingParametersController;
+import com.softpath.riverpath.controller.*;
+import com.softpath.riverpath.custom.event.CustomEvent;
+import com.softpath.riverpath.custom.event.EventEnum;
+import com.softpath.riverpath.custom.event.EventManager;
+import com.softpath.riverpath.controller.*;
 import com.softpath.riverpath.model.Boundary;
 import com.softpath.riverpath.model.BoundaryCondition;
 import com.softpath.riverpath.model.Coordinates;
@@ -20,6 +18,7 @@ import com.softpath.riverpath.model.RadialBoundary;
 import com.softpath.riverpath.model.ShapeType;
 import com.softpath.riverpath.model.Simulation;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -41,6 +40,7 @@ import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.SPACE;
 
+@Slf4j
 @Getter
 public class RunnerService {
 
@@ -69,9 +69,8 @@ public class RunnerService {
 
 
     public void generateAllMTCFiles(String domainMesh) {
-        Simulation simulation = new Simulation();
+        Simulation simulation = SimulationStateService.getInstance().getCurrentSimulation();
         // set domain mesh file name
-        simulation.setDomainMeshFile(domainMesh);
         mergeDomainFileTemplate(simulation);
         // generate GeometresE.mtc
         mergeBoundaryDefTemplate(simulation);
@@ -86,6 +85,7 @@ public class RunnerService {
 
         try {
             mapper.writeValue(new File(workspaceDirectory, "simulation.json"), simulation);
+            EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_RUN_FIRED));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -157,7 +157,6 @@ public class RunnerService {
         mergeContextToTemplate("IO", "output.mtc", "output.vm", context);
     }
 
-
     private void addBoundaryToSimulation(BoundaryDefinitionController controller, Simulation simulation) {
         // Check whether a boundary with this name already exists
         String boundaryName = controller.getNameInitialValue();
@@ -222,7 +221,7 @@ public class RunnerService {
                 break;
 
             default:
-                throw new IllegalStateException("Boundary type is not supported " + type);
+                throw new RuntimeException("Boundary type is not supported " + type);
         }
         return boundary;
     }
@@ -535,7 +534,7 @@ public class RunnerService {
             return processBuilder.start();
         } catch (Exception e) {
             mainController.displayMessageConsoleOutput(e.getMessage());
-            return null;
+            throw new RuntimeException(e);
         }
     }
 }

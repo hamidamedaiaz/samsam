@@ -32,20 +32,20 @@ import java.util.ResourceBundle;
 public class BoundaryConditionController extends ValidAndCancelController implements Initializable {
 
     @FXML
-    @ValidatedField
+    @ValidatedField(nullable = true)
     private TextField priorityValue;
     @FXML
     private Label titledName;
     @FXML
     private HBox originHBox;
     @FXML
-    @ValidatedField(nullable = true)
+    @ValidatedField(nullable = true, isDouble = true)
     private TextField vxValue;
     @FXML
-    @ValidatedField(nullable = true)
+    @ValidatedField(nullable = true, isDouble = true)
     private TextField vyValue;
     @FXML
-    @ValidatedField(nullable = true, is3D = true)
+    @ValidatedField(nullable = true, is3D = true, isDouble = true)
     private TextField vzValue;
     @FXML
     private BoundaryTitledPane boundaryConditionPane;
@@ -53,7 +53,7 @@ public class BoundaryConditionController extends ValidAndCancelController implem
     @ValidatedField
     private TextField conditionNameValue;
     @FXML
-    @ValidatedField(nullable = true)
+    @ValidatedField(nullable = true, isDouble = true)
     private TextField pressureValue;
 
     /**
@@ -117,7 +117,7 @@ public class BoundaryConditionController extends ValidAndCancelController implem
     @Override
     protected boolean customValidate() {
         // check if condition name is not blank -- can never be blank because it's not possible in definition
-        EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_CONDITION_VALIDATED, conditionNameValue.getText()));
+        EventManager.fireCustomEvent(new CustomEvent(EventEnum.NEW_CONDITION_VALIDATED, titledName.getText(), this));
         return true;
     }
 

@@ -15,6 +15,7 @@ module com.softpath.riverpath {
     requires lexactivator;
     requires java.prefs;
     requires java.logging;
+    requires javafx.graphics;
 
     opens com.softpath.riverpath to javafx.fxml;
     exports com.softpath.riverpath;
@@ -24,4 +25,6 @@ module com.softpath.riverpath {
     opens com.softpath.riverpath.controller to javafx.fxml;
     exports com.softpath.riverpath.model;
     opens com.softpath.riverpath.model to com.fasterxml.jackson.databind;
+    exports com.softpath.riverpath.service;
+    opens com.softpath.riverpath.service to javafx.fxml;
 }

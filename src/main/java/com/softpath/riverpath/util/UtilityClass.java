@@ -22,20 +22,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Objects;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import static com.softpath.riverpath.custom.event.EventEnum.CONVERT_PYTHON_PROCESS_MESSAGE;
+import static org.apache.commons.lang3.Strings.CS;
 
 /**
  * Utility class - Optimized version for embedded Python
@@ -44,14 +39,11 @@ import static com.softpath.riverpath.custom.event.EventEnum.CONVERT_PYTHON_PROCE
  */
 public class UtilityClass {
 
+    public static File workspaceDirectory;
     private static final String ZERO = "0";
     private static final String DOT = ".";
     private static final String EMPTY = "";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    public static File workspaceDirectory;
-    // Cache for the embedded Python path
-    private static String embeddedPythonPath = null;
-    private static boolean pythonExtracted = false;
 
     /**
      * Create workspace project if not exist
@@ -72,59 +64,61 @@ public class UtilityClass {
         workspaceDirectory.mkdir();
 
         try {
-            // Copy resources from JAR
-            URL sourceUrl = UtilityClass.class.getClassLoader().getResource("workspace_template");
-            if (sourceUrl == null) {
-                throw new RuntimeException("workspace_template not found in resources");
+            // Template is located next to the app executable (installed by jpackage)
+            // In development: Use resources
+            // In production: Use installed directory
+            File sourceDirectory = getWorkspaceTemplateDirectory();
+            if (!sourceDirectory.exists()) {
+                throw new RuntimeException("workspace_template not found at: " + sourceDirectory.getAbsolutePath());
             }
-
-            if (sourceUrl.getProtocol().equals("jar")) {
-                // If we are in a JAR
-                copyResourcesFromJar(workspaceDirectory);
-            } else {
-                // If we are in development
-                File sourceDirectory = new File(sourceUrl.getFile());
-                FileUtils.copyDirectory(sourceDirectory, workspaceDirectory);
-            }
+            FileUtils.copyDirectory(sourceDirectory, workspaceDirectory);
         } catch (IOException e) {
             throw new RuntimeException("Error copying workspace_template: " + e.getMessage());
         }
         UtilityClass.workspaceDirectory = workspaceDirectory;
     }
 
-    private static void copyResourcesFromJar(File targetDir) throws IOException {
-        try (InputStream in = UtilityClass.class.getClassLoader().getResourceAsStream("workspace_template")) {
-            if (in == null) {
-                throw new IOException("workspace_template directory not found in JAR");
-            }
-
-            // Reading JAR entries
-            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain().getCodeSource().getLocation().toURI()))) {
-
-                Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith("workspace_template/") && !entry.isDirectory()) {
-                        // Create parent folders if necessary
-                        File targetFile = new File(targetDir, entry.getName().substring("workspace_template/".length()));
-                        targetFile.getParentFile().mkdirs();
-
-                        // Copy the file
-                        try (InputStream jarIn = jarFile.getInputStream(entry); FileOutputStream out = new FileOutputStream(targetFile)) {
-                            byte[] buffer = new byte[8192];
-                            int bytesRead;
-                            while ((bytesRead = jarIn.read(buffer)) != -1) {
-                                out.write(buffer, 0, bytesRead);
-                            }
-                        }
-                    }
-                }
-            } catch (URISyntaxException e) {
-                throw new IOException("Error accessing JAR file", e);
-            }
+    /**
+     * Get the application directory where resources are located.
+     * In development mode: returns current directory
+     * In production mode (jpackage): returns the app directory set by jpackage
+     *
+     * @return File pointing to the app directory
+     */
+    private static File getAppDirectory() {
+        // Production: jpackage sets this property via -Dapp.dir=$APPDIR
+        String appDir = System.getProperty("app.dir");
+        if (appDir != null) {
+            return new File(appDir);
         }
+
+        // Development: use current directory
+        return new File(System.getProperty("user.dir"));
     }
 
+    /**
+     * Get the workspace template directory.
+     * In development mode: reads from resources
+     * In production mode: reads from installed app directory
+     *
+     * @return File pointing to workspace_template directory
+     */
+    private static File getWorkspaceTemplateDirectory() {
+        // Try production path first (in app directory)
+        File productionPath = new File(getAppDirectory(), "workspace_template");
+        if (productionPath.exists()) {
+            return productionPath;
+        }
+
+        // Fall back to development path (resources)
+        URL resourceUrl = UtilityClass.class.getClassLoader().getResource("workspace_template");
+        if (resourceUrl != null && "file".equals(resourceUrl.getProtocol())) {
+            return new File(resourceUrl.getFile());
+        }
+
+        // Return production path even if it doesn't exist (will trigger error message)
+        return productionPath;
+    }
 
     /**
      * Extracts and returns the path to the embedded Python executable.
@@ -134,111 +128,9 @@ public class UtilityClass {
      * @throws RuntimeException if embedded Python is not found or cannot be extracted.
      */
     private static String getEmbeddedPythonPath() {
-        if (embeddedPythonPath != null && pythonExtracted) {
-            return embeddedPythonPath;
-        }
-
-        try {
-            URL pythonUrl = UtilityClass.class.getResource("/python/python.exe");
-
-            if (pythonUrl != null) {
-                return "C:\\Users\\user\\Desktop\\Jean_Sophtapth\\riverpath\\src\\main\\resources\\python\\python.exe";
-            }
-
-            // If we get here, embedded Python has not been found.
-            throw new RuntimeException("Embedded Python not found in resources. " +
-                    "Verify that the file /python/python.exe exists in src/main/resources/");
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error accessing embedded Python: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Optimized extraction of Python - only essential files
-     *
-     * @return the path to the extracted Python executable
-     * @throws IOException if extraction fails
-     */
-    private static String extractEmbeddedPythonOptimized() throws IOException {
-        if (embeddedPythonPath != null && pythonExtracted) {
-            return embeddedPythonPath;
-        }
-
-        try {
-            // Create a temporary folder for Python
-            File tempPythonDir = new File(getHomeDirectory(), "python_embedded");
-            if (!tempPythonDir.exists()) {
-                tempPythonDir.mkdirs();
-            }
-
-            // Check if Python is already extracted and functional
-            File existingPython = new File(tempPythonDir, "python.exe");
-            if (existingPython.exists() && existingPython.canExecute()) {
-                embeddedPythonPath = existingPython.getAbsolutePath();
-                pythonExtracted = true;
-                return embeddedPythonPath;
-            }
-
-            EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "Embedded Python extraction..."));
-
-            // Extract ONLY the essential files from the JAR
-            try (JarFile jarFile = new JarFile(new File(UtilityClass.class.getProtectionDomain().getCodeSource().getLocation().toURI()))) {
-
-                Enumeration<JarEntry> entries = jarFile.entries();
-                int extractedFiles = 0;
-
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-
-                    // Filter ONLY essential files
-                    if (entry.getName().startsWith("python/") && !entry.isDirectory() && isEssentialPythonFile(entry.getName())) {
-
-                        // Create the destination file
-                        String relativePath = entry.getName().substring("python/".length());
-                        File targetFile = new File(tempPythonDir, relativePath);
-                        targetFile.getParentFile().mkdirs();
-
-                        // Extract the file
-                        try (InputStream jarIn = jarFile.getInputStream(entry)) {
-                            Files.copy(jarIn, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        }
-
-                        // Make executable if it is python.exe
-                        if (targetFile.getName().equals("python.exe")) {
-                            targetFile.setExecutable(true);
-                            embeddedPythonPath = targetFile.getAbsolutePath();
-                        }
-
-                        extractedFiles++;
-                    }
-                }
-
-                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "✅ " + extractedFiles + " Extracted Python files"));
-            }
-
-            if (embeddedPythonPath == null) {
-                throw new IOException("python.exe not found in python resources/");
-            }
-
-            pythonExtracted = true;
-            return embeddedPythonPath;
-
-        } catch (URISyntaxException e) {
-            throw new IOException("Error accessing JAR", e);
-        }
-    }
-
-    /**
-     * Determines whether a Python file is essential for execution.
-     * Optimization: only extract what is necessary.
-     */
-    private static boolean isEssentialPythonFile(String fileName) {
-        return fileName.matches("python/(python\\.exe|.*\\.dll|Lib/(site-packages/(numpy|gmsh)/.*|.*\\.py))");
-    }
-
-    public static String getResourcePath(String resource) {
-        return Objects.requireNonNull(UtilityClass.class.getResource(resource)).getFile();
+        return Paths.get(getAppDirectory().getAbsolutePath(), "gmsh4mtc", "gmsh4mtc.exe")
+                .toAbsolutePath()
+                .toString();
     }
 
     public static File exeTempFile() {
@@ -280,7 +172,7 @@ public class UtilityClass {
     }
 
     /**
-     * Convert msh file to .t file using embedded python program gmsh4mtc.py
+     * Convert msh file to .t file using embedded python program gmsh4mtc.exe
      *
      * @param selectedFile the selected msh file
      * @return the .t file
@@ -291,18 +183,24 @@ public class UtilityClass {
         String pythonExecutable = getEmbeddedPythonPath();
 
         // Log for debugging
-        EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "Conversion mesh: " + selectedFile.getName()));
+        EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE,
+                "Conversion mesh: " + selectedFile.getName()));
 
         String fileExtentionT = buildTExtentionName(selectedFile);
         File pythonOutputFile = new File(workspaceDirectory, fileExtentionT);
 
         // Prepare the Python command
-        List<String> command = Arrays.asList(pythonExecutable, "gmsh4mtc.py", selectedFile.getAbsolutePath(), pythonOutputFile.getAbsolutePath());
+        List<String> command = Arrays.asList(
+                pythonExecutable,
+                selectedFile.getAbsolutePath(),
+                pythonOutputFile.getAbsolutePath()
+        );
 
         int exitCode = runCommand(workspaceDirectory, command, false);
 
         if (exitCode != 0) {
-            throw new RuntimeException("Error converting mesh file to .t with embedded Python. " + "Exit code: " + exitCode);
+            throw new RuntimeException("Error converting mesh file to .t with embedded Python. " +
+                    "Exit code: " + exitCode);
         }
 
         return fileExtentionT;
@@ -366,7 +264,8 @@ public class UtilityClass {
 
         } catch (Exception e) {
             if (!silent) {
-                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE, "Runtime error: " + e.getMessage()));
+                EventManager.fireCustomEvent(new CustomEvent(CONVERT_PYTHON_PROCESS_MESSAGE,
+                        "Runtime error: " + e.getMessage()));
             }
             throw new RuntimeException(e);
         }
@@ -379,12 +278,18 @@ public class UtilityClass {
      */
     private static boolean shouldDisplayError(String line) {
         // Filter known NumPy warnings
-        if (line.contains("DeprecationWarning") || line.contains("Arrays of 2-dimensional vectors are deprecated") || line.contains("in1d is deprecated") || line.contains("Use arrays of 3-dimensional vectors instead") || line.contains("Use `np.isin` instead")) {
+        if (line.contains("DeprecationWarning") ||
+                line.contains("Arrays of 2-dimensional vectors are deprecated") ||
+                line.contains("in1d is deprecated") ||
+                line.contains("Use arrays of 3-dimensional vectors instead") ||
+                line.contains("Use `np.isin` instead")) {
             return false;
         }
 
         // Filter other non-critical warnings
-        return !line.contains("FutureWarning") && !line.contains("UserWarning") && !line.contains("RuntimeWarning");// Show real errors
+        return !line.contains("FutureWarning") &&
+                !line.contains("UserWarning") &&
+                !line.contains("RuntimeWarning");// Show real errors
     }
 
     public static String buildTExtentionName(File selectedFile) {
@@ -393,16 +298,6 @@ public class UtilityClass {
         } else {
             return selectedFile.getName();
         }
-    }
-
-    public static String checkInteger(String oldValue, String newValue) {
-        oldValue = StringUtils.defaultIfBlank(oldValue.replaceAll("[^\\d]", EMPTY), ZERO);
-        // Remove leading zeros
-        newValue = StringUtils.defaultIfBlank(newValue.replaceAll("^0+", EMPTY), ZERO);
-        if (!newValue.matches("\\d*")) {
-            newValue = newValue.replaceAll("[^\\d]", EMPTY);
-        }
-        return StringUtils.defaultIfBlank(newValue, oldValue);
     }
 
     public static boolean checkNotBlank(TextField myTextField) {
@@ -426,10 +321,14 @@ public class UtilityClass {
     }
 
     public static void handleTextWithDigitOnly(KeyEvent event) {
-        if (!KeyCode.LEFT.equals(event.getCode()) & !KeyCode.RIGHT.equals(event.getCode()) & !KeyCode.UP.equals(event.getCode()) & !KeyCode.DOWN.equals(event.getCode())) {
+        if (!KeyCode.LEFT.equals(event.getCode()) &
+                !KeyCode.RIGHT.equals(event.getCode()) &
+                !KeyCode.UP.equals(event.getCode()) &
+                !KeyCode.DOWN.equals(event.getCode())
+        ) {
             TextField textField = (TextField) event.getSource();
-            boolean startWithMinus = StringUtils.startsWith(textField.getText(), "-");
-            textField.setText(StringUtils.removeStart(textField.getText(), "-"));
+            boolean startWithMinus = CS.startsWith(textField.getText(), "-");
+            textField.setText(CS.removeStart(textField.getText(), "-"));
 
             // remove multiple dot
             String currentText = removeMultipleDot(textField);
@@ -442,8 +341,10 @@ public class UtilityClass {
                     }
                     textField.setText(currentText);
                     textField.positionCaret(textField.getText().length());
-                } else if (StringUtils.startsWith(currentText, ZERO) && !StringUtils.startsWith(currentText, "0.") && !StringUtils.equals(currentText, ZERO)) {
-                    textField.setText(StringUtils.removeStart(currentText, ZERO));
+                } else if (CS.startsWith(currentText, ZERO)
+                        && !CS.startsWith(currentText, "0.")
+                        && !CS.equals(currentText, ZERO)) {
+                    textField.setText(CS.removeStart(currentText, ZERO));
                     textField.positionCaret(textField.getText().length());
                 }
             }
@@ -600,7 +501,6 @@ public class UtilityClass {
     public static void prettyPrintDouble(TextField textField) {
         try {
             double prettyVal = Double.parseDouble(textField.getText());
-
             textField.setText(String.valueOf(prettyVal));
         } catch (Exception ignored) {
         }

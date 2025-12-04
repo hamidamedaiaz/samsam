@@ -17,6 +17,7 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URL;
@@ -27,6 +28,7 @@ import java.util.ResourceBundle;
  *
  * @author rhajou
  */
+@Slf4j
 @NoArgsConstructor
 @Getter
 @Setter
@@ -87,8 +89,7 @@ public class WelcomeController implements Initializable {
                 ImportProjectController importProjectController = new ImportProjectController(mainController);
                 importProjectController.handleImportProject();
             } catch (IOException e) {
-                e.printStackTrace();
-                // TODO Gérer l'exception de manière appropriée
+                throw new RuntimeException(e);
             }
         });
     }

@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.TextField;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
@@ -22,7 +23,6 @@ import static com.softpath.riverpath.util.UtilityClass.flagTextFieldWarning;
 public abstract class FieldContainerController {
 
     private final List<TextFieldHandler> textFieldHandlers = new ArrayList<>();
-
     private final List<HyperLinkFieldHandler> hyperLinkFieldHandlers = new ArrayList<>();
 
     @FXML
@@ -31,9 +31,13 @@ public abstract class FieldContainerController {
     }
 
     private void addAllTextFieldHandlers() {
+        boolean mode3D = DomainProperties.getInstance().is3D();
         for (Field f : this.getClass().getDeclaredFields()) {
             if (f.isAnnotationPresent(FXML.class) && f.isAnnotationPresent(ValidatedField.class)) {
                 ValidatedField validatedField = f.getAnnotation(ValidatedField.class);
+                if (validatedField.is3D() && !mode3D) {
+                    continue;
+                }
                 f.setAccessible(true);
                 try {
                     if (f.get(this) instanceof TextField tf) {
@@ -43,7 +47,7 @@ public abstract class FieldContainerController {
                         hyperLinkFieldHandlers.add(new HyperLinkFieldHandler(hl));
                     }
                 } catch (IllegalAccessException e) {
-                    throw new RuntimeException("unexpected error while handling ValidatedField" ,e);
+                    throw new RuntimeException("unexpected error while handling ValidatedField", e);
                 }
             }
         }
@@ -57,6 +61,21 @@ public abstract class FieldContainerController {
         hyperLinkFieldHandlers.forEach(HyperLinkFieldHandler::commit);
     }
 
+    public boolean hasDirtyFields() {
+        if (this.textFieldHandlers != null) {
+            for (TextFieldHandler tfh : this.textFieldHandlers) {
+                if (tfh.isDirty()) return true;
+            }
+        }
+
+        if (this.hyperLinkFieldHandlers != null) {
+            for (HyperLinkFieldHandler hlf : this.hyperLinkFieldHandlers) {
+                if (hlf.isDirty()) return true;
+            }
+        }
+
+        return false;
+    }
     /**
      * Rollback all text fields
      */
@@ -115,8 +134,7 @@ public abstract class FieldContainerController {
                         .filter(t -> t.getField().equals(field))
                         .map(TextFieldHandler::getLastValidatedValue)
                         .findFirst()
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("Field not found in bindings: " + field))
+                        .orElseThrow(() -> new IllegalArgumentException("Field not found in bindings: " + field))
                 );
     }
 

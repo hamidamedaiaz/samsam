@@ -12,6 +12,7 @@ import javafx.scene.input.KeyEvent;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.softpath.riverpath.custom.event.EventEnum.DATA_ENGINEERING_VALID;
 import static com.softpath.riverpath.util.UtilityClass.handleTextWithDigitOnly;
@@ -19,17 +20,18 @@ import static com.softpath.riverpath.util.UtilityClass.handleTextWithDigitOnly;
 @NoArgsConstructor
 @Getter
 @Setter
+@Slf4j
 public class DataEngineeringController extends ValidAndCancelController {
 
     @FXML
     private BoundaryTitledPane titledPane;
 
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     private TextField viscosity;
 
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     private TextField density;
 
     /**
@@ -52,7 +54,7 @@ public class DataEngineeringController extends ValidAndCancelController {
 
     @Override
     protected boolean customValidate() {
-        EventManager.fireCustomEvent(new CustomEvent(DATA_ENGINEERING_VALID));
+        EventManager.fireCustomEvent(new CustomEvent(DATA_ENGINEERING_VALID, this));
         return true;
     }
 
@@ -63,9 +65,15 @@ public class DataEngineeringController extends ValidAndCancelController {
 
     protected void importData(Simulation simulation) {
         // import data
-        viscosity.setText(simulation.getViscosity());
-        density.setText(simulation.getDensity());
-        handleValidate(null);
+        try {
+            if (!simulation.getViscosity().isEmpty() || !simulation.getDensity().isEmpty()) {
+                viscosity.setText(simulation.getViscosity());
+                density.setText(simulation.getDensity());
+                handleValidate(null);
+            }
+        } catch (NullPointerException e) {
+            log.warn("No data to import for module");
+        }
     }
 
 }

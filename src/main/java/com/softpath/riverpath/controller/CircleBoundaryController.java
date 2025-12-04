@@ -25,7 +25,7 @@ public class CircleBoundaryController extends BaseBoundaryController {
     @FXML
     private Label circleLabel;
     @FXML
-    @ValidatedField
+    @ValidatedField(isDouble = true)
     @Getter
     private TextField radius;
 
