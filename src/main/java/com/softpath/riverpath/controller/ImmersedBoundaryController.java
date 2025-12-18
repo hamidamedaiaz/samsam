@@ -104,4 +104,9 @@ public class ImmersedBoundaryController extends BaseBoundaryController {
         return getInitialValue(importObject);
     }
 
+
+    public Hyperlink getImportObject() {
+        return importObject;
+    }
+
 }

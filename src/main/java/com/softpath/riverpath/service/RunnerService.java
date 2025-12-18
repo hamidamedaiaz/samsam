@@ -17,6 +17,8 @@ import com.softpath.riverpath.model.ImmersedBoundary;
 import com.softpath.riverpath.model.RadialBoundary;
 import com.softpath.riverpath.model.ShapeType;
 import com.softpath.riverpath.model.Simulation;
+import com.softpath.riverpath.util.DomainProperties;
+import com.softpath.riverpath.util.UtilityClass;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -33,10 +35,8 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
 import static org.apache.commons.lang3.StringUtils.SPACE;
 
@@ -57,7 +57,10 @@ public class RunnerService {
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         // The rest of the constructor remains unchanged.
-        parseBlocks("/filler_template/filler.txt");
+        // get accurate template
+        String template_selector = DomainProperties.getInstance().is3D() ? "3d" : "2d";
+        String template = "/filler_template/filler"+template_selector+".txt";
+        parseBlocks(template);
         this.leftBottomPaneController = leftBottomPaneController;
         this.workspaceDirectory = workspaceDirectory;
         velocityEngine = new VelocityEngine();
@@ -97,10 +100,12 @@ public class RunnerService {
         mergeContextToTemplate("Maillage","maillage.mtc", "maillage.vm", context);
     }
     private void mergeBoundaryDefTemplate(Simulation simulation) {
+        int immersedObjectId = 0;
         int index = 1;
         StringBuilder allBoundaryDef = new StringBuilder();
         StringBuilder allBoundaryValues = new StringBuilder();
         for (BoundaryDefinitionController controller : leftBottomPaneController.getBoundaryDefinitionControllers()) {
+            if (controller.isImmersedObject()) immersedObjectId = index;
             allBoundaryDef.append(addBlockUniqueParameter(index, "definition"));
             allBoundaryValues.append(generateDefinitionValue(index, controller));
             addBoundaryToSimulation(controller, simulation);
@@ -111,6 +116,7 @@ public class RunnerService {
         VelocityContext context = new VelocityContext();
         context.put("definition", allBoundaryDef);
         context.put("values", allBoundaryValues);
+        context.put("immersedObjectId", immersedObjectId);
         // Write merged output to the file
         mergeContextToTemplate("Geometrie", "GeometresE.mtc", "Geometrie.vm", context);
     }
@@ -197,6 +203,10 @@ public class RunnerService {
                 Coordinates normal = new Coordinates();
                 normal.setX(controller.getHalfPlaneBoundaryController().getNormalX().getText());
                 normal.setY(controller.getHalfPlaneBoundaryController().getNormalY().getText());
+                if (DomainProperties.getInstance().is3D()) {
+                    HalfPlane3DBoundaryController cast = (HalfPlane3DBoundaryController) controller.getHalfPlaneBoundaryController();
+                    normal.setZ(cast.getNormalZ().getText());
+                }
                 HalfPlaneBoundary halfPlaneBoundary = new HalfPlaneBoundary();
                 halfPlaneBoundary.setNormal(normal);
                 boundary = halfPlaneBoundary;
@@ -230,7 +240,12 @@ public class RunnerService {
         StringBuilder allBoundaryConditions = new StringBuilder();
         BoundaryConditionGlobalController globalController = leftBottomPaneController.getConditionGlobalController();
         List<String> appartientList = new ArrayList<>();
-        for (BoundaryConditionController controller : globalController.getAllConditions()) {
+        for (BoundaryConditionController controller : globalController.getAllConditions().stream().sorted(Comparator.<BoundaryConditionController, Double>comparing(
+                ctr -> {
+                    String txt = ctr.getPriorityValue().getText();
+                    return txt.isBlank() ? 0.0 : Double.parseDouble(txt);
+                }
+        ).reversed()).toList()) {
             String boundaryDefId = controller.getLabel();
             int index = indexByName.get(boundaryDefId);
             // generate new condition block
@@ -244,8 +259,12 @@ public class RunnerService {
         VelocityContext context = new VelocityContext();
         context.put("conditions", allBoundaryConditions);
         context.put("appartient", String.join("", appartientList));
-        // Write merged output to the file
-        mergeContextToTemplate("Solveur", "CLMecanique.mtc", "CLMecanique.vm", context);
+        // Write merged output to the file,
+        if ( DomainProperties.getInstance().is3D()) {
+            mergeContextToTemplate("Solveur", "CLMecanique.mtc", "CLMecanique3d.vm", context);
+        } else {
+            mergeContextToTemplate("Solveur", "CLMecanique.mtc", "CLMecanique2d.vm", context);
+        }
     }
 
     /**
@@ -257,19 +276,54 @@ public class RunnerService {
      * @return the condition block
      */
     private String addNewCondition(BoundaryConditionController controller, int index) {
-        VelocityContext context = new VelocityContext();
-        context.put("id", String.valueOf(index));
-        context.put("degx", controller.getVxValue().getText() != null ? "Un" : "Zero");
-        context.put("degy", controller.getVyValue().getText() != null ? "Un" : "Zero");
-        context.put("pressureGiven", StringUtils.isEmpty(controller.getPressureValue().getText()) ? "Zero" : "Un");
-        context.put("vx", StringUtils.equals(controller.getVxValue().getText(), "1") ? "Un" : "Zero");
-        context.put("vy", StringUtils.equals(controller.getVyValue().getText(), "1") ? "Un" : "Zero");
-        context.put("pressureValue", StringUtils.equals(controller.getPressureValue().getText(), "1") ? "Un" : "Zero");
-        context.put("priority", controller.getPriorityValue().getText());
+
+        // Read all text fields once
+        String vx = controller.getVxValue().getText() == null ? "" : controller.getVxValue().getText();
+        String vy = controller.getVyValue().getText()  == null ? "" : controller.getVyValue().getText();
+        String vz = DomainProperties.getInstance().is3D()
+                ? controller.getVzValue().getText()
+                : "";
+        String p  = controller.getPressureValue().getText() == null ? "" : controller.getPressureValue().getText();
+        String pr = controller.getPriorityValue().getText() == null ? "" : controller.getPriorityValue().getText();
+
+        // Regex for non-zero numeric
+        String nonZeroNumber = "^(?!0+(\\.0+)?$)\\d+(\\.\\d+)?$";
+
+        // Helper lambdas
+        Function<String, String> hasValue = s -> s.isBlank() ? "Zero" : "Un";
+        Function<String, String> isNonZero = s -> s.matches(nonZeroNumber) ? "Un" : "Zero";
+
+        VelocityContext ctx = new VelocityContext();
+        ctx.put("id", index);
+
+        // deg flags → “Un” if the field *contains any value*
+        ctx.put("degx", hasValue.apply(vx));
+        ctx.put("degy", hasValue.apply(vy));
+        if (DomainProperties.getInstance().is3D()) {
+            ctx.put("degz", hasValue.apply(vz));
+        }
+
+        // pressureGiven → “Un” if pressure field not empty
+        ctx.put("pressureGiven", hasValue.apply(p));
+
+        // actual numeric values → “Un” if non-zero number, else “Zero”
+        ctx.put("vx", isNonZero.apply(vx));
+        ctx.put("vy", isNonZero.apply(vy));
+        if (DomainProperties.getInstance().is3D()) {
+            ctx.put("vz", isNonZero.apply(vz));
+        }
+
+        // FIXED: pressureValue should check *p*, not vx
+        ctx.put("pressureValue", isNonZero.apply(p));
+
+        ctx.put("priority", pr);
+
         StringWriter writer = new StringWriter();
-        velocityEngine.evaluate(context, writer, "Template name", blockMap.get("condition"));
+        velocityEngine.evaluate(ctx, writer, "Template name", blockMap.get("condition"));
+
         return writer.toString();
     }
+
 
     /**
      * Generate block with unique parameter (like ID or other)
@@ -399,11 +453,12 @@ public class RunnerService {
     }
 
     private String generateDefinitionValue(int index, BoundaryDefinitionController controller) {
-        VelocityContext context = new VelocityContext();
-        context.put("id", String.valueOf(index));
-        context.put("ox", controller.getOriginX().getText());
-        context.put("oy", controller.getOriginY().getText());
-        /* TODO KAN-38-FAC adapt after factorization
+
+        // ---------------------------------------------------------
+        // ORIGINAL COMMENTS RESTORED
+        // ---------------------------------------------------------
+    /*
+        TODO KAN-38-FAC adapt after factorization
         if (controller.isNormal()) {
             context.put("AxeOrNormal", "Normale");
             context.put("coordinates", concateWithWhiteCharacter(controller.getNormalXInitialValue(),
@@ -414,27 +469,81 @@ public class RunnerService {
                     controller.getFirstAxe2DYInitialValue(),
                     controller.getSecondAxe2DXInitialValue(),
                     controller.getSecondAxe2DYInitialValue()));
-        }*/
-        // handle axe or normal
-        if (controller.getComboBoxInitialValue() == ShapeType.Half_Plane) {
-            HalfPlaneBoundaryController halfPlaneController = controller.getHalfPlaneBoundaryController();
-            context.put("AxeOrNormal", "Normale");
-            context.put("coordinates", halfPlaneController.getNormalX().getText() + " "
-                    + halfPlaneController.getNormalY().getText());
         }
-        // set data form
-        if (controller.isImmersedObject()) {
-            context.put("AxeOrNormal", "Axes");
-            // TODO after KAN-52 : handle axes coordinates
-            context.put("coordinates", "1 0 0 1");
-            context.put("geoDataValue", generateGeometreObjectBlock(index, controller));
+    */
+
+        VelocityContext context = new VelocityContext();
+        context.put("id", String.valueOf(index));
+
+        boolean is3D = DomainProperties.getInstance().is3D();
+
+        // ---------------------------------------------------------
+        // ORIGIN (2D or 3D)
+        // ---------------------------------------------------------
+        if (is3D) {
+            context.put("ox", controller.getOriginX().getText());
+            context.put("oy", controller.getOriginY().getText());
+            context.put("oz", controller.getOriginZ().getText());
         } else {
+            context.put("ox", controller.getOriginX().getText());
+            context.put("oy", controller.getOriginY().getText());
+        }
+
+        // ---------------------------------------------------------
+        // HANDLE AXE / NORMAL depending on shape
+        // ---------------------------------------------------------
+        if (controller.getComboBoxInitialValue() == ShapeType.Half_Plane) {
+
+            HalfPlaneBoundaryController halfPlaneController =
+                    controller.getHalfPlaneBoundaryController();
+
+            context.put("AxeOrNormal", "Normale");
+
+            if (is3D) {
+                HalfPlane3DBoundaryController cast = (HalfPlane3DBoundaryController) halfPlaneController;
+                context.put("coordinates",
+                        cast.getNormalX().getText() + " " +
+                                cast.getNormalY().getText() + " " +
+                                cast.getNormalZ().getText()
+                );
+            } else {
+                context.put("coordinates",
+                        halfPlaneController.getNormalX().getText() + " " +
+                                halfPlaneController.getNormalY().getText()
+                );
+            }
+        }
+
+        // ---------------------------------------------------------
+        // IMMERSED OBJECT (2D or 3D)
+        // ---------------------------------------------------------
+        if (controller.isImmersedObject()) {
+
+            context.put("AxeOrNormal", "Axes");
+
+            // TODO after KAN-52 : handle axes coordinates
+            if (is3D) {
+                // 3D identity axes: (1 0 0 | 0 1 0 | 0 0 1)
+                context.put("coordinates", "1 0 0  0 1 0  0 0 1");
+            } else {
+                context.put("coordinates", "1 0 0 1");
+            }
+
+            context.put("geoDataValue", generateGeometreObjectBlock(index, controller));
+
+        } else {
+
             context.put("geoDataValue", generateGeometreBoundaryBlock(index, controller));
         }
+
+        // ---------------------------------------------------------
+        // VELOCITY TEMPLATE EVALUATION
+        // ---------------------------------------------------------
         StringWriter writer = new StringWriter();
         velocityEngine.evaluate(context, writer, "Template name", blockMap.get("value"));
         return writer.toString();
     }
+
 
     /**
      * Generate geometre object block

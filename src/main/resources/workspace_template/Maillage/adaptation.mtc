@@ -34,7 +34,8 @@
 	    { Maillage= MaillagePrincipal }  
 		{ Modele= MetriqueGenerale }        
 	 	{ Modele= Sorties }          
-		{ Modele= MaillagePrincipal  }                  
+		{ Modele= MaillagePrincipal  }       
+		{ Modele= Geometres }   	
     } 
 } 
 

@@ -29,7 +29,8 @@
 		{ Champ= CompteurTemps }
 		{ Champ= FrequenceStockage_vtk }
 		{ Champ= Adaptateur }
-		{ Champ= MinNorme }
+		{ Champ= Lmax }
+		{ Champ= Lmin }
 	}
  	{ Dependance= 
         { Maillage= MaillagePrincipal }

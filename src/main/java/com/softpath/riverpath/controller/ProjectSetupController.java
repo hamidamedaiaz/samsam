@@ -4,6 +4,7 @@ import com.softpath.riverpath.custom.event.CustomEvent;
 import com.softpath.riverpath.custom.event.EventManager;
 import com.softpath.riverpath.fileparser.CFDTriangleMesh;
 import com.softpath.riverpath.service.RunnerService;
+import com.softpath.riverpath.util.DomainProperties;
 import com.softpath.riverpath.util.UtilityClass;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -103,6 +104,8 @@ public class ProjectSetupController implements Initializable {
             domainExtentionT = convertMshPython(selectedFile);
             // display the mesh
             displayDomain(new File(workspaceDirectory, domainExtentionT));
+            // copy cimlib resources
+            UtilityClass.copyCimLibResources();
         }
         EventManager.fireCustomEvent(new CustomEvent(NEW_PROJECT, domainExtentionT));
     }
@@ -215,7 +218,8 @@ public class ProjectSetupController implements Initializable {
                 // if exit ok then display the result in ParaView
                 if (exitCode == 0) {
                     List<String> paraViewcommand = Arrays.asList("paraview.exe", "bulles_..vtu");
-                    UtilityClass.runCommand(new File(workspaceDirectory, "Resultats" + File.separator + "2d"),
+                    String dimensionContext = DomainProperties.getInstance().is3D() ? "3d" : "2d";
+                    UtilityClass.runCommand(new File(workspaceDirectory, "Resultats" + File.separator + dimensionContext),
                             paraViewcommand);
                 } else {
                     // if exit not ok then display error message
@@ -304,7 +308,6 @@ public class ProjectSetupController implements Initializable {
         // register to listen to any modification in the titled panes
         listenAndHandleActionOnPane();
     }
-
     /**
      * Register a listener to handle a new validated boundary definition
      */

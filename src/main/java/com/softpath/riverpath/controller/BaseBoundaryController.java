@@ -8,6 +8,7 @@ import com.softpath.riverpath.util.UtilityClass;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
@@ -69,7 +70,7 @@ public abstract class BaseBoundaryController extends FieldContainerController {
      * @param origin           the origin
      * @return the shape
      */
-    abstract Shape getShape(DomainProperties domainProperties, Coordinates origin);
+    abstract <T extends Node> T getShape(DomainProperties domainProperties, Coordinates origin);
 
     /**
      * Handle the key released event for numbers

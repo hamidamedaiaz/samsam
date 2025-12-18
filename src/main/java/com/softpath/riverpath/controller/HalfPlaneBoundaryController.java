@@ -7,6 +7,7 @@ import com.softpath.riverpath.util.DomainProperties;
 import com.softpath.riverpath.util.ValidatedField;
 import javafx.fxml.FXML;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
@@ -47,7 +48,7 @@ public class HalfPlaneBoundaryController extends BaseBoundaryController {
      * Set up change listeners for the form fields
      */
 
-    private void setupChangeListeners() {
+    public void setupChangeListeners() {
         normalX.textProperty().addListener((observable, oldValue, newValue) -> {
             // Mark as dirty when field changes
             setDirty(true);
@@ -74,7 +75,7 @@ public class HalfPlaneBoundaryController extends BaseBoundaryController {
      * @see BaseBoundaryController#getShape(DomainProperties, Coordinates)
      */
     @Override
-    public Shape getShape(DomainProperties domainProperties, Coordinates origin) {
+    public <T extends Node> T getShape(DomainProperties domainProperties, Coordinates origin) {
         double normalX = Double.parseDouble(getInitialValue(this.normalX));
         double normalY = Double.parseDouble(getInitialValue(this.normalY));
         double length = Math.sqrt(normalX * normalX + normalY * normalY);
@@ -110,7 +111,7 @@ public class HalfPlaneBoundaryController extends BaseBoundaryController {
         line.setStroke(javafx.scene.paint.Color.RED);
         line.setStrokeWidth(2);
 
-        return line;
+        return (T) line;
     }
 
     /**

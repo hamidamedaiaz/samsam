@@ -47,7 +47,7 @@ public class MainApplication extends Application {
         if (!licenseManager.initialize()) {
             // No valid license - request activation
             String licenseKey = showLicenseDialog();
-            if (false) {
+            if (licenseKey == null || !licenseManager.activateLicense(licenseKey)) {
                 showError("Une licence valide est requise pour utiliser CimCFD.\nL'application va se fermer.");
                 Platform.exit();
                 return;

@@ -536,3 +536,50 @@ display-box {
     -fx-cursor: default;
     -fx-opacity: 0.6;
 }
+
+.global-context-menu {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-padding: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0, 0, 2);
+}
+
+
+.domain-menu {
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-text-fill: #000000;
+}
+
+
+.objects-header {
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-text-fill: #000000;
+    -fx-opacity: 1.0;
+}
+
+
+.object-menu {
+    -fx-font-size: 12px;
+    -fx-text-fill: #2c3e50;
+}
+
+
+.mode-item {
+    -fx-font-size: 12px;
+    -fx-text-fill: #2c3e50;
+}
+
+
+.no-objects-item {
+    -fx-text-fill: #95a5a6;
+    -fx-font-style: italic;
+    -fx-font-size: 11px;
+}
+
+
+.context-menu .separator {
+    -fx-background-color: #dee2e6;
+}

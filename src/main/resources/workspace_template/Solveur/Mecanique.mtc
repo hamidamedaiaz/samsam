@@ -4,12 +4,12 @@
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= Vitesse }
-			{ Data= ValeurItem 2 0 0 }  	
+			{ Data: Dimension/vecteur.txt }  	
 		}
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= VitesseMoins }
-			{ Data= ValeurItem 2 0 0 } 	
+			{ Data: Dimension/vecteur.txt }	
 	    }
 		{ Champ= 
 			{ Type= P1_Scalaire_Par }
@@ -19,29 +19,24 @@
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= ZeroVecteur }
-			{ Data= ValeurItem 2 0.0 0.0 }
+			{ Data: Dimension/vecteur.txt }
 	    }
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= VectorD }
-			{ Data= ValeurItem 2 1 0 }
+			{ Data: Dimension/vecteurx.txt }
 		}
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= VectorL }
-			{ Data= ValeurItem 2 0 1 }
+			{ Data: Dimension/vecteury.txt }
 		}
-		{ Champ= 
-			{ Type= P1_Vecteur_Par }
-			{ Nom= Vz }
-			{ Data: Dimension/vecteur.txt }	    	
-	    }
 		{ SolveurLocal=
 			{ Type= NavierStokesVMS }
 			{ Resolution= 12  }  
 			{ Preconditionneur= 20 } 
 			{ NbChampParametre= 8 }
-			{ ChampParametre= Eta1 Gravite Vitesse VitesseMoins Rho1 PasDeTemps ZeroVecteur Zero }
+			{ ChampParametre= Eta1 ZeroVecteur Vitesse VitesseMoins Rho1 PasDeTemps ZeroVecteur Zero }
 			{ NbChampSolution= 2 }
 			{ ChampSolution= Vitesse Pression }
 			{ Newton= 0.5 }	

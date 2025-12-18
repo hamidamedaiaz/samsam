@@ -1,6 +1,7 @@
 package com.softpath.riverpath.util;
 
 import com.softpath.riverpath.custom.event.CustomEvent;
+import com.softpath.riverpath.custom.event.EventEnum;
 import com.softpath.riverpath.custom.event.EventManager;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -12,6 +13,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +24,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +41,7 @@ import static org.apache.commons.lang3.Strings.CS;
  *
  * @author rhajou
  */
+@Slf4j
 public class UtilityClass {
 
     public static File workspaceDirectory;
@@ -63,6 +68,10 @@ public class UtilityClass {
         // create folder
         workspaceDirectory.mkdir();
 
+        UtilityClass.workspaceDirectory = workspaceDirectory;
+    }
+
+    public static void copyCimLibResources() {
         try {
             // Template is located next to the app executable (installed by jpackage)
             // In development: Use resources
@@ -72,10 +81,18 @@ public class UtilityClass {
                 throw new RuntimeException("workspace_template not found at: " + sourceDirectory.getAbsolutePath());
             }
             FileUtils.copyDirectory(sourceDirectory, workspaceDirectory);
-        } catch (IOException e) {
+
+            // change context of files in Dimension to right dimension files - we could also erase them all and format Principale resource path of those files depending on the  dimension of domain
+            String dimensionContext_selector = DomainProperties.getInstance().is3D() ? "3d" : "2d";
+            File destDimensionContext = new File(workspaceDirectory, "Dimension");
+            URI originURI = Path.of(getAppDirectory().getAbsolutePath(),"src", "main", "resources", dimensionContext_selector).toUri();
+            File originDimensionContext = new File(originURI);
+            // cp
+            FileUtils.deleteDirectory(destDimensionContext);
+            FileUtils.copyDirectory(originDimensionContext, destDimensionContext);
+        } catch (Exception e) {
             throw new RuntimeException("Error copying workspace_template: " + e.getMessage());
         }
-        UtilityClass.workspaceDirectory = workspaceDirectory;
     }
 
     /**

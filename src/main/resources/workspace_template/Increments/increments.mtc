@@ -28,9 +28,7 @@
         { Modele= Interacteur } 
 	
         { Modele= Geometres }
-		
-		{ Modele= ExtraireOrdonnee }  	
-		{ Modele= CalculV }  	
+			
 		{ Modele= CLMecanique }  	
 		{ Modele= NavierStokes }
 		{ Modele= UpdateV }	
@@ -39,7 +37,6 @@
 		  
 	    { Modele= DeLaFonction }
       	{ Modele= Adaptateur }
-		{ Modele= Geometres }
 	   
 	  	{ Modele= Sorties }
 		{ Modele= GestionTemps }  

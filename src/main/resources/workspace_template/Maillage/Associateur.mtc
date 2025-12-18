@@ -2,11 +2,6 @@
 	{ Type= ModeleDeModeles }
 	{ Data=
 		{ Champ= 
-			{ Type= P0C_Scalaire_Par }
-			{ Nom= MinNorme }
-			{ Data= ValeurItem 1  0.0000001 }
-		}
-		{ Champ= 
 			{ Type= P1_Scalaire_Par }
 			{ Nom= UneFonction }
 			{ Data= ValeurItem 1  0 }
@@ -31,8 +26,8 @@
         { Maillage= MaillagePrincipal }
 		{ Modele= zeroAssociation } 
 		
-  		 Modele= AssociationScalaire 
-  		 Modele= addFonction 
+  		{ Modele= AssociationScalaire }
+  		{ Modele= addFonction }
 		
  		{ Modele= normaliseVecteur }
   		{ Modele= AssociationVecteur }
@@ -193,7 +188,6 @@
 	}
 	{ Dependance= 
        	{ Maillage= MaillagePrincipal }
-		{ Champ= MinNorme }
 		{ Champ= Nscaling }
 		{ Champ= ScaleNorme }
 		{ Champ= axx }

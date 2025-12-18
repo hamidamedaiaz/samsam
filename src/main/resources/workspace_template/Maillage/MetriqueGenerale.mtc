@@ -4,7 +4,7 @@
 		{ Champ= 
 			{ Type= P0C_Vecteur_Par }
 			{ Nom= ZEROVg }
-			{ Data= 1 8 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0  }
+			{ Data= 1 8 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 }
 		}
 		{ Champ= 
 			{ Type= P0C_Vecteur_Par }
@@ -19,12 +19,12 @@
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= LeVecteur }
-			{ Data= ValeurItem 8 0.0 0.0  0.0  0.0 0.0  0.0  0.0  0.0 0.0  0.0  }
+			{ Data= ValeurItem 8 0.0 0.0  0.0  0.0 0.0  0.0  0.0  0.0 0.0  0.0 }
 		}
   		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= Gradient2 }
-			{ Data= ValeurItem 24 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 }
+			{ Data= ValeurItem 24 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 }
 		}
 		{ Champ= 
 			{ Type= P1_Scalaire_Par }
@@ -79,27 +79,27 @@
   		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= Gradient }
-			{ Data= ValeurItem 2 0.0 0.0   }
+			{ Data= ValeurItem 2 0.0 0.0 }
   		}
 		{ Champ= 
 			{ Type= P1_Scalaire_Par }
 			{ Nom= Erreur }
-			{ Data= ValeurItem 1 0.0   }
+			{ Data= ValeurItem 1 0.0 }
 		}
 		{ Champ= 
 			{ Type= P0_Scalaire_Par }
 			{ Nom= ErrReg }
-			{ Data= ValeurItem 1 0.0001   }
+			{ Data= ValeurItem 1 0.0001 }
 		}
 		{ Champ= 
 			{ Type= P0C_Scalaire_Par }
 			{ Nom= hMin }
-			{ Data= ValeurItem 1 0.001   }
+			{ Data= ValeurItem 1 0.001 }
 		}
 		{ Champ= 
 			{ Type= P0C_Scalaire_Par }
 			{ Nom= sMax }
-			{ Data= ValeurItem 1 8  }
+			{ Data= ValeurItem 1 8 }
 		}
 	}
 	{ Dependance=  
@@ -115,7 +115,6 @@
  		{ Modele= ErreurL1 }
 	}			
 }
-
 
 { Zero=
  	{ Type= ModeleArithmetique }
@@ -143,7 +142,6 @@
         { Champ= ZEROT }
         { Champ= ZEROTg }
 	}
-
 	{ Operation= ErreurL1 = ZERO }
 	{ Operation= LaC = ZERO }
 	{ Operation= Compt = ZERO }
@@ -181,11 +179,9 @@
 	}
 }
 
-
 { GradA=
    { Type= ModeleParticulaire }
    { Data=
-	
         { ItemSolveur=
             { Type= ISMaTC } 
             { Dimension: Dimension/dim.txt } 
@@ -194,15 +190,14 @@
             { NbChampParametre= 2 }
             { ChampParametre= XX UX2 } 
         }
-	
     }
-	
     { Dependance=
         { Maillage= MaillagePrincipal }
         { Champ= XX }
         { Champ= UX2 }
     }
 }
+
 { CalculXX2=
 	{ Type= ModeleFonctionnel }
 	{ Data=
@@ -263,7 +258,7 @@
 		{ Champ= 
 			{ Type= P0C_Scalaire_Par }
 			{ Nom= hMinimal }
-			{ Data= ValeurItem 1 0.0001   }
+			{ Data= ValeurItem 1 0.0001 }
 		}
 		{ SimplexSolveurFonctionnel=
 			{ Type= SsfMaTC }
@@ -298,25 +293,21 @@
 { GradA2=
    { Type= ModeleParticulaire }
    { Data=
-	
         { ItemSolveur=
             { Type= ISMaTC } 
  			{ Passe= 2 }
             { Dimension: Dimension/dim.txt } 
-           { NbChampSolution= 2 }
+            { NbChampSolution= 2 }
             { ChampSolution= MeTC Erreur }
             { NbChampParametre= 1 }
             { ChampParametre=  Compt } 
         }
-	
     }
     { Dependance=
         { Maillage= MaillagePrincipal }
         { Champ= Compt }
     }
 }
-
-
 
 { IntegreErreur=
    { Type= ModeleFonctionnel }

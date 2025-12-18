@@ -1,9 +1,9 @@
 { DeLaFonction=
 	{ Type= ModeleDeModeles }
-	{ Dependance=
+	{ Dependance=  
         { Maillage= MaillagePrincipal }
   		{ Modele= MelangeErr }
-  		{ Modele= UpLoad }
+  		{ Modele= UpLoad }	
 		{ Modele= Associateur }
 	}
 }
@@ -11,15 +11,15 @@
 { MelangeErr=
 	{ Type= ModeleFonctionnel }
 	{ Data=
-        { Champ=
+        { Champ= 
 			{ Type= P0C_Scalaire_Par }
 			{ Nom= Err1 }
-			{ Data= ValeurItem 1  1 }
+			{ Data= ValeurItem 1 1 }
 	   	}
-       	{ Champ=
+       	{ Champ= 
 			{ Type= P0C_Scalaire_Par }
 			{ Nom= Err2 }
-			{ Data= ValeurItem 1  0.00001 }
+			{ Data= ValeurItem 1 0.00001 }
 	   	}
 		{ SimplexSolveurFonctionnel=
 			{ Type= SsfMelange2Champs }
@@ -47,16 +47,16 @@
 		{ Champ= UnVecteur }
 		{ Champ= UneFonction }
 	}
-	{ Dependance=
+	{ Dependance= 
        	{ Maillage= MaillagePrincipal }
 		{ Champ= Alpha }
 		{ Champ= Lmax }
 		{ Champ= Vitesse }
 		{ Champ= Eta1 }
 	}
-
+	
 	{ Operation= UneFonction = Alpha }
 	{ Operation= UneFonction /= Lmax }
 	{ Operation= UnVecteur = Vitesse }
-	// { Operation= UnVecteur *= Eta1 }
+	//{ Operation= UnVecteur *= Eta1 }
 }

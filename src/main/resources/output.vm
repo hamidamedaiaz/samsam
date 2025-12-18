@@ -27,6 +27,7 @@
             { Champ= normeUnVecteur }
             { Champ= UnVecteur }
 $dynamicFields
+            { Champ= Alpha }
     }
 
 }

@@ -3,16 +3,15 @@ package com.softpath.riverpath.controller;
 import com.softpath.riverpath.custom.pane.ZoomableScrollPane;
 import com.softpath.riverpath.fileparser.CFDTriangleMesh;
 import com.softpath.riverpath.model.Coordinates;
-import com.softpath.riverpath.util.ColorObjectHandler;
+import com.softpath.riverpath.util.DisplayMode;
 import com.softpath.riverpath.util.DomainProperties;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Point3D;
-import javafx.scene.Group;
-import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -20,25 +19,20 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.DrawMode;
 import javafx.scene.shape.MeshView;
 import javafx.scene.shape.Shape;
-import javafx.scene.transform.Scale;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.net.URL;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
 
 @NoArgsConstructor
 @Getter
 @Setter
 public class RightPaneController implements Initializable {
-
-    private final ColorObjectHandler colorObjectHandler = new ColorObjectHandler();
+    private final MeshObjectManager objectManager = new MeshObjectManager();
+    private final SceneRenderer sceneRenderer = new SceneRenderer(objectManager);
+    private final GlobalContextMenuBuilder menuBuilder = new GlobalContextMenuBuilder(objectManager, sceneRenderer);
     @FXML
     private VBox displayBox;
     @FXML
@@ -55,146 +49,81 @@ public class RightPaneController implements Initializable {
     private ConsolePaneController consolePaneController;
     @FXML
     private MainController mainController;
-    // Declare the ToggleGroup
     private ToggleGroup displayToggleGroup;
     private MeshView domainMeshView;
-    private Map<String, CFDTriangleMesh> allMeshes = new HashMap<>();
-    private Map<String, Group> normalArrows = new HashMap<>();
-    private Map<String, Shape> shapes = new HashMap<>();
     private Pane rootPane;
     private StackPane contentPane;
+    private ContextMenu globalContextMenu;
 
     /**
-     * This method should be called when the domain mesh is loaded
-     *
-     * @param domainMesh the domain mesh
+     * Initialize the domain mesh and setup the scene
      */
     public void initiateDomain(CFDTriangleMesh domainMesh) {
-        // Determining and saving the dimension
+        // Create and configure domain mesh view
         domainMeshView = new MeshView(domainMesh);
         domainMeshView.setDrawMode(DrawMode.LINE);
-        allMeshes.clear();
-        // compute domain properties
+
+        // Clear all objects
+        objectManager.clear();
+
+        // Compute domain properties
         DomainProperties.getInstance().computeDomainProperties(meshPane, domainMeshView);
         DomainProperties.getInstance().set3D(domainMesh.is3D());
-        // apply scale to the domain mesh
-        applyScale(domainMeshView);
-        // initiate fields
+
+        // Apply scale to domain
+        sceneRenderer.applyScale(domainMeshView);
+        sceneRenderer.setDomainMeshView(domainMeshView);
+
+        // Initialize root pane
         rootPane = new Pane();
         contentPane = new StackPane();
         contentPane.prefWidthProperty().bind(rootPane.widthProperty());
         contentPane.prefHeightProperty().bind(rootPane.heightProperty());
         rootPane.getChildren().add(contentPane);
 
-        //  Display the mesh in the 3D view
-        Group mainGroup = new Group();
-        mainGroup.getChildren().add(domainMeshView);
-        rootPane.getChildren().add(mainGroup);
+        // Initial display
+        sceneRenderer.renderScene(rootPane);
 
+        // Apply pane view
         meshPaneController.applyPaneView(rootPane);
-        simpleView.setVisible(true);
-        meshView.setVisible(true);
+
+        // Setup global context menu (only way to change display modes)
+        setupGlobalContextMenu();
     }
 
     /**
-     * Display only the borderlines with specified color
+     * Display/refresh the complete scene
+     * Delegates to SceneRenderer
      */
     public void displayBorderlines() {
-        // Simple check - if not initialized, do nothing
-        if (domainMeshView == null || rootPane == null) {
-            return;
-        }
-        // Utiliser la même structure que displayMesh()
-        rootPane.getChildren().clear();
-        // Create the domain border visualization (domain outline in black)
-        CFDTriangleMesh domainAsMesh = (CFDTriangleMesh) domainMeshView.getMesh();
-        double scaleFactor = DomainProperties.getInstance().getScaleFactor();
-        List<Node> domainLines = domainAsMesh.createColoredBorderLines(scaleFactor, Color.BLACK);
-        // Create a group to hold all visual elements
-        Group linesGroup = new Group();
-        linesGroup.getChildren().addAll(domainLines);
-        // Iterate over all immersed meshes
-        for (CFDTriangleMesh objectMesh : allMeshes.values()) {
-            Color objectColor = objectMesh.getColor();
-            List<Node> borderLines = objectMesh.createColoredBorderLines(scaleFactor, objectColor);
-            //Add each object's borders immediately
-            linesGroup.getChildren().addAll(borderLines);
-        }
-        addAllShapes(linesGroup);
-        linesGroup.getChildren().addAll(normalArrows.values());
-        rootPane.getChildren().add(linesGroup);
+        sceneRenderer.renderScene(rootPane);
     }
 
     /**
-     * Display domain and all objects
+     * Update domain display mode
      */
-    private void displayMesh() {
-        // Simple check - if not initialized, do nothing
-        if (domainMeshView == null || rootPane == null) {
-            return;
-        }
-
-        // clear all
-        rootPane.getChildren().clear();
-        domainMeshView.setDrawMode(DrawMode.LINE);
-        rootPane.getChildren().add(domainMeshView);
-        Group meshGroup = new Group();
-        // add immersed objects to the meshGroup
-        addImmersedObjects(meshGroup);
-        // add shapes to the meshGroup
-        meshGroup.getChildren().addAll(shapes.values());
-        // add normal arrows for half planes
-        meshGroup.getChildren().addAll(normalArrows.values());
-        rootPane.getChildren().add(meshGroup);
-    }
-
     public void applySelectedDisplayMode() {
+        // Update domain display mode based on selected toggle button
         if (simpleView.isSelected()) {
-            displayBorderlines();
+            sceneRenderer.setDomainDisplayMode(DisplayMode.SIMPLE);
         } else {
-            displayMesh();
+            sceneRenderer.setDomainDisplayMode(DisplayMode.MESH);
         }
-
-    }
-
-    /**
-     * This method should be called when an object mesh is loaded
-     * It merges the domain mesh with the object mesh
-     * and displays the result with two different colors
-     *
-     * @param controllerID the controller ID handling the immersed object
-     * @param objectMesh   the object mesh
-     */
-    private void addObject(String controllerID, CFDTriangleMesh objectMesh,Coordinates origin, Color existingColor) {
-        objectMesh.setScale(DomainProperties.getInstance().getScaleFactor());
-        objectMesh.setPosition(new Point3D(
-                parseDouble(origin.getX()),
-                parseDouble(origin.getY()),
-                parseDouble(origin.getZ())
-        ));
-
-        if (existingColor != null) {
-            objectMesh.setColor(existingColor);
-        } else {
-            objectMesh.setColor(colorObjectHandler.getNextColor());
-        }
-        allMeshes.put(controllerID, objectMesh);
+        // Refresh the display
+        displayBorderlines();
     }
 
     /**
      * Add and display the boundary to the right pane
-     *
-     * @param boundaryDefinitionController the boundary definition controller
+     * Delegates to objectManager
      */
     public void addAndDisplay(BoundaryDefinitionController boundaryDefinitionController) {
-        Color existingColor = null;
-        CFDTriangleMesh existingMesh = allMeshes.get(boundaryDefinitionController.toString());
-        if (existingMesh != null) {
-            existingColor = existingMesh.getColor();
-        }
+        String controllerId = boundaryDefinitionController.toString();
+        Color existingColor = objectManager.getExistingColor(controllerId);
+
         // Remove from both collections to ensure no duplicates
-        allMeshes.remove(boundaryDefinitionController.toString());
-        shapes.remove(boundaryDefinitionController.toString());
+        objectManager.removeObject(controllerId);
+        objectManager.removeShape(controllerId);
 
         // if standard shape then add it to shape list in the right pane
         if (boundaryDefinitionController.isStandardShape()) {
@@ -206,133 +135,84 @@ public class RightPaneController implements Initializable {
                     boundaryDefinitionController.getOriginY().getText(),
                     boundaryDefinitionController.getOriginZ().getText()
             );
-            addObject(boundaryDefinitionController.toString(), immersedController.getImmersedObjectMesh(), origin,existingColor);
+
+            // Add object to manager
+            objectManager.addObject(controllerId, immersedController.getImmersedObjectMesh(), origin, existingColor);
+
+            // Store the display name
+            String displayName = boundaryDefinitionController.getNameValue().getText();
+            if (displayName != null && !displayName.trim().isEmpty()) {
+                objectManager.setDisplayName(controllerId, displayName);
+            } else {
+                objectManager.setDisplayName(controllerId, immersedController.getImportObject().getText());
+            }
         }
 
-        if (simpleView.isSelected()) {
-            displayBorderlines();  // Stay in simple mode if it was selected
-        } else {
-            displayMesh();         // Otherwise display in mesh mode
-        }
+        // Refresh display
+        displayBorderlines();
     }
 
     /**
-     * This method should be called when a boundary is removed
-     *
-     * @param boundaryDefinitionController the boundary definition controller
+     * Remove a boundary and refresh display
+     * Delegates to objectManager
+
      */
     public void removeAndDisplay(BoundaryDefinitionController boundaryDefinitionController) {
-        String id = boundaryDefinitionController.toString();
         if (boundaryDefinitionController.isImmersedObject()) {
-            allMeshes.remove(id);
+            objectManager.removeObject(boundaryDefinitionController.toString());
         } else {
-            shapes.remove(boundaryDefinitionController.toString());
-            // Remove the normal arrow if it exists
-            normalArrows.remove(boundaryDefinitionController.toString());
+            objectManager.removeShape(boundaryDefinitionController.toString());
+            objectManager.removeNormalArrow(boundaryDefinitionController.toString());
         }
+
         // refresh the display
-        displayMesh();
+        applySelectedDisplayMode();
     }
 
     /**
-     * Add a shape to the right pane
-     *
-     * @param boundaryDefinitionController the boundary definition controller
+     * Add a shape to the object manager
      */
     private void addShape(BoundaryDefinitionController boundaryDefinitionController) {
         if (boundaryDefinitionController.isStandardShape()) {
-            Coordinates origin = new Coordinates(boundaryDefinitionController.getOriginX().getText(), boundaryDefinitionController.getOriginY().getText(), boundaryDefinitionController.getOriginZ().getText());
-            Shape shape = boundaryDefinitionController.getBaseBoundaryController().getShape(DomainProperties.getInstance(), origin);
-            shapes.put(boundaryDefinitionController.toString(), shape);
-            // add normal to right pane
-            normalArrows.put(boundaryDefinitionController.toString(), boundaryDefinitionController.getHalfPlaneBoundaryController().getPlanNormal(origin));
-        }
-    }
+            Coordinates origin = new Coordinates(
+                    boundaryDefinitionController.getOriginX().getText(),
+                    boundaryDefinitionController.getOriginY().getText(),
+                    boundaryDefinitionController.getOriginZ().getText()
+            );
 
-    /**
-     * Add shapes to the group
-     *
-     * @param group the group to add the shapes to
-     */
-    private void addAllShapes(Group group) {
-        if (!shapes.isEmpty()) {
-            Collection<Shape> shapesCollection = shapes.values();
-            shapesCollection.forEach((shape) -> {
-                shape.setFill(Color.TRANSPARENT);
-                shape.setStroke(Color.RED);
-                shape.setStrokeWidth(1);
-            });
-            group.getChildren().addAll(shapesCollection);
-        }
-    }
+            Shape shape = boundaryDefinitionController.getBaseBoundaryController()
+                    .getShape(DomainProperties.getInstance(), origin);
+            objectManager.addShape(boundaryDefinitionController.toString(), shape);
 
-    /**
-     * Add immersed objects to the meshGroup
-     *
-     * @param meshGroup the mesh group
-     */
-    private void addImmersedObjects(Group meshGroup) {
-        // For each mesh, create a MeshView with its own color
-        double scaleFactor = DomainProperties.getInstance().getScaleFactor();
-        for (CFDTriangleMesh objectMesh : allMeshes.values()) {
-            Color objectColor = objectMesh.getColor();
-            List<Node> objectNodes;
-            if (!objectMesh.is3D()) {
-                // For 2D objects, use createColoredLines to apply coloring.
-                objectNodes = objectMesh.createColoredLines(scaleFactor, objectColor);
-            } else {
-                // For 3D objects, keep the existing logic
-                MeshView objectMeshView = new MeshView(objectMesh);
-                objectMeshView.setDrawMode(DrawMode.LINE);
-                // Apply the scale
-                // ⚠️JAVAFX_INVERTED_AXIS_Y
-                objectMeshView.getTransforms().add(new Scale(scaleFactor, -scaleFactor, scaleFactor));
-                objectNodes = Collections.singletonList(objectMeshView);
-            }
-            // Add to main group
-            meshGroup.getChildren().addAll(objectNodes);
+            // add normal arrow
+            objectManager.addNormalArrow(
+                    boundaryDefinitionController.toString(),
+                    boundaryDefinitionController.getHalfPlaneBoundaryController().getPlanNormal(origin)
+            );
         }
-    }
-
-    private void applyScale(MeshView meshView) {
-        double scaleFactor = DomainProperties.getInstance().getScaleFactor();
-        // ⚠️JAVAFX_INVERTED_AXIS_Y
-        Scale scale = new Scale(scaleFactor, -scaleFactor, scaleFactor);
-        meshView.getTransforms().add(scale);
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        // Initialize the ToggleGroup
-        displayToggleGroup = new ToggleGroup();
-
-        // Add the ToggleButtons to the ToggleGroup
-        simpleView.setToggleGroup(displayToggleGroup);
-        meshView.setToggleGroup(displayToggleGroup);
-
-        // Prevent buttons from being deselected
-        displayToggleGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal == null) {
-                displayToggleGroup.selectToggle(oldVal);
-            }
-        });
-        // Handle toggle between 2D and 3D mode
-        meshView.setOnAction(event -> {
-            if (meshView.isSelected()) {
-                displayMesh();
-            }
-        });
-        simpleView.setOnAction(event -> {
-            if (simpleView.isSelected()) {
-                displayBorderlines();
-            }
-        });
+        ////Initialization complete - display modes are now controlled via context menu only  : )
     }
-    private double parseDouble(String value) {
-        try {
-            return Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
+
+    /**
+     * Setup the global context menu that appears when right-clicking anywhere in the scene
+     */
+    private void setupGlobalContextMenu() {
+        globalContextMenu = new ContextMenu();
+
+        /// Attach right-click listener to rootPane
+        rootPane.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                menuBuilder.buildContextMenu(globalContextMenu, v -> displayBorderlines());
+                globalContextMenu.show(rootPane, event.getScreenX(), event.getScreenY());
+                event.consume();
+            } else if (event.getButton() == MouseButton.PRIMARY) {
+                // Close menu on left click
+                globalContextMenu.hide();
+            }
+        });
     }
 }

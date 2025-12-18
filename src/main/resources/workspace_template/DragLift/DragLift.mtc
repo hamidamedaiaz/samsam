@@ -4,22 +4,22 @@
 		{ Champ= 
 			{ Type= P0C_Vecteur_Par }
 			{ Nom= VectorXi }
-			{ Data= ValeurItem 2 1 0 }  	
+			{ Data: Dimension/vecteurx.txt } 	
 		}
 		{ Champ= 
 			{ Type= P0C_Vecteur_Par }
 			{ Nom= VectorYi }
-			{ Data= ValeurItem 2 0 1 } 	
+			{ Data: Dimension/vecteury.txt }
 	    }
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= VectorX }
-			{ Data= ValeurItem 2 1 0 } 	
+			{ Data: Dimension/vecteurx.txt } 	
 	    }
 		{ Champ= 
 			{ Type= P1_Vecteur_Par }
 			{ Nom= VectorY }
-			{ Data= ValeurItem 2 0 1 } 	
+			{ Data: Dimension/vecteury.txt }	
 	    }
 	}
 	{ Dependance=  
